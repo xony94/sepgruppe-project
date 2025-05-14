@@ -1,0 +1,152 @@
+document.addEventListener('DOMContentLoaded', function () {
+
+    const communityList = document.querySelector('#community-list');
+    const toggleIcon = document.querySelector('#toggle-communities');
+    const communityLeft = document.querySelector('#community-left');
+    const communityItems = document.querySelectorAll('.community-item');
+	const inviteBtn = document.querySelector('#invite-btn');
+	const leaveBtn = document.querySelector('#leave-btn');
+	const memberListElement = document.getElementById('member-list');
+	const tabs = document.querySelectorAll('.nav-link');
+	const tabContents = document.querySelectorAll('.tab-pane');
+	const articlesList = document.querySelector('#recent-articles-list');
+	const communityTabs = document.querySelector('#community-tabs');
+
+    // 토글 아이콘 클릭 시 커뮤니티 목록 토글
+    toggleIcon.addEventListener('click', function () {
+        if (communityList.style.display === "none" || communityList.style.display === "") {
+            communityList.style.display = "block";
+            toggleIcon.classList.remove("bi-chevron-down");
+            toggleIcon.classList.add("bi-chevron-up");
+        } else {
+            communityList.style.display = "none";
+            toggleIcon.classList.remove("bi-chevron-up");
+            toggleIcon.classList.add("bi-chevron-down");
+        }
+    });
+
+    /* 커뮤니티 목록 클릭 시 좌측 내용 동적으로 변경 */
+    communityItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+            const communityNo = this.getAttribute('data-community-no'); // 클릭한 커뮤니티의 communityNo 값 가져오기
+            loadCommunityDetails(communityNo); // 해당 커뮤니티 세부 정보 로드
+        });
+    });
+
+    function loadCommunityDetails(communityNo) {
+        communityLeft.innerHTML = '';
+
+        const communityContent = `
+            <a class="btn btn-primary btn-create">
+                <i class="bi bi-pencil"></i> 글쓰기
+            </a>
+            <a class="btn btn-secondary w-100 mb-2">
+                <i class="bi bi-plus-circle"></i> 게시판 추가
+            </a>
+            <h6 class="mt-4">가입 멤버</h6>
+            <ul class="member-list list-unstyled" id="member-list">
+            </ul>
+            <hr/>
+            <button class="btn btn-outline-primary w-100 mb-2" id="invite-btn">초대하기</button>
+            <button class="btn btn-outline-danger w-100" id="leave-btn">탈퇴하기</button>
+        `;
+        communityLeft.innerHTML = communityContent;
+
+        inviteBtn.style.display = "block";
+        leaveBtn.style.display = "block";
+
+        $.ajax({
+            url: '/sep/${companyNo}/community/getMembers',   // 서버에서 멤버 목록을 가져올 API 엔드포인트
+            data: { communityNo: communityNo },  // 커뮤니티 번호를 쿼리 파라미터로 전달
+            success: function (data) {
+
+                // 기존 멤버 목록 초기화
+                memberListElement.innerHTML = '';
+
+                // 받은 데이터에서 멤버 목록을 동적으로 추가
+                if (data.members && data.members.length > 0) {
+                    // 데이터의 members 배열을 순회하면서 각 멤버를 화면에 추가
+                    data.members.forEach(function (member) {
+                        // 각 멤버의 employee 필드를 통해 empNm 가져오기
+                        if (member.employee && member.employee.length > 0) {
+                            member.employee.forEach(function (employee) {
+                                if (employee.empNm) {
+                                    const listItem = document.createElement('li');
+                                    listItem.classList.add('member-item');
+                                    listItem.textContent = employee.empNm; // member.employee.empNm으로 멤버 이름을 표시
+
+                                    memberListElement.appendChild(listItem); // 멤버 목록에 추가
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    // 멤버가 없을 경우 '멤버가 없습니다.' 메시지 표시
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('member-item');
+                    listItem.textContent = '멤버가 없습니다.';
+                    memberListElement.appendChild(listItem);
+                }
+            }
+        });
+    }
+
+
+
+    // 각 탭 클릭 시 콘텐츠 전환
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function (event) {
+            // 클릭한 탭에 해당하는 콘텐츠만 보이게 하기
+            const targetId = event.target.getAttribute('data-bs-target').substring(1); // #을 제외한 ID 값
+            const targetContent = document.getElementById(targetId);
+
+            // 모든 콘텐츠 숨기기
+            tabContents.forEach(function (content) {
+                content.classList.remove('show', 'active');
+            });
+
+            // 클릭한 탭에 해당하는 콘텐츠만 보이게 하기
+            targetContent.classList.add('show', 'active');
+        });
+    });
+
+
+    // 커뮤니티 목록 클릭 시
+    communityItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+            const communityNo = this.getAttribute('data-community-no');  // 클릭한 커뮤니티의 communityNo 값 가져오기
+
+            // 커뮤니티 탭 숨기기 (가입 커뮤니티/전체 커뮤니티 버튼)
+            communityTabs.style.display = 'none';
+
+            // 기존 게시글 지우기
+            articlesList.innerHTML = '';
+
+            // AJAX 요청으로 서버에서 해당 커뮤니티의 게시글을 가져오기
+            $.ajax({
+                url: `/sep/${companyNo}/community/getPost`,  // 서버 요청 URL
+                data: { communityNo: communityNo },  // 쿼리 파라미터로 communityNo 전달
+                success: function (data) {
+					console.log(data)
+
+                    if (data && data.length > 0) {
+                        data.forEach(function (article) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td><input type="checkbox"></td>
+                                <td>${article.title}</td>
+                                <td>${article.author}</td>
+                                <td>${article.date}</td>
+                            `;
+                            articlesList.appendChild(row);
+                        });
+                    } else {
+                        const noArticlesMessage = document.createElement('tr');
+                        noArticlesMessage.innerHTML = '<td colspan="4">게시글이 없습니다.</td>';
+                        articlesList.appendChild(noArticlesMessage);  // 게시글이 없을 경우 메시지 표시
+                    }
+                }
+            });
+        });
+    });
+});

@@ -1,0 +1,23 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 4. 5.     	SJH            최초 생성
+ *
+ * </pre>
+ */
+@charset "UTF-8";
+
+   body {
+       background-color: #f8f9fa;
+   }
+   .container {
+       max-width: 800px;
+       margin: 0 auto;
+   }
+   h2 {
+       margin-top: 20px;
+       text-align: center;
+   }

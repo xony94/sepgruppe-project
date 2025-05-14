@@ -1,0 +1,155 @@
+package kr.or.ddit.works.mail.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import kr.or.ddit.works.mail.service.MailService;
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+import kr.or.ddit.works.mail.vo.MailSentLogVO;
+
+@Controller
+@RequestMapping("/{companyNo}/mail")
+public class MailController {
+
+    @Autowired
+    private MailService mailService;
+
+    @GetMapping("")
+    public String getMailList(@PathVariable("companyNo") String companyNo,
+                               Authentication authentication,
+                               Model model) throws Exception {
+        String empId = authentication.getName();
+        List<MailReceptionVO> mailList = mailService.selectMailList(empId);
+        model.addAttribute("mailList", mailList);
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/mailHome";
+    }
+    
+    @GetMapping("/{type:list|mySentMail}")
+    public String getMailList(@PathVariable("companyNo") String companyNo,
+                              @PathVariable("type") String type,
+                              Authentication authentication,
+                              Model model) throws Exception {
+
+        String empId = authentication.getName();
+
+        if ("mySentMail".equals(type)) {
+            List<MailReceptionVO> sentMailList = mailService.getSentMailList(empId);
+            model.addAttribute("mailList", sentMailList);
+            return "groupware/mail/sentList";
+        } else {
+            List<MailReceptionVO> mailList = mailService.selectMailList(empId);
+            model.addAttribute("mailList", mailList);
+            return "groupware/mail/mailList";
+        }
+    }
+
+    @GetMapping("/{type:mailContent|sentMailContent}/{mailId}")
+    public String getAnyMailContent(@PathVariable String companyNo,
+                                    @PathVariable String mailId,
+                                    @PathVariable String type,
+                                    Authentication authentication,
+                                    Model model) throws Exception {
+
+        String empId = authentication.getName();
+        String content;
+
+        if ("sentMailContent".equals(type)) {
+            content = mailService.getSentMailContent(empId, mailId);
+            model.addAttribute("sentMailContent", content);
+            return "groupware/mail/sentMailContent";
+        } else {
+            content = mailService.getMailContent(empId, mailId);
+            model.addAttribute("mailContent", content);
+            return "groupware/mail/mailContent";
+        }
+    }
+
+    @GetMapping("/favorites")
+    public String showFavoriteMailPage(@PathVariable("companyNo") String companyNo,
+                                       Authentication authentication,
+                                       Model model) {
+        String empId = authentication.getName();
+        List<MailReceptionVO> favoriteList = mailService.getFavoriteMailList(empId);
+        model.addAttribute("mailList", favoriteList);
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String mailListJson = mapper.writeValueAsString(favoriteList);
+            model.addAttribute("mailListJson", mailListJson);
+        } catch (JsonProcessingException e) {
+            model.addAttribute("mailListJson", "[]");
+        }
+
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/mailFavorite";
+    }
+
+    @GetMapping("/favorites/list")
+    @ResponseBody
+    public List<MailReceptionVO> getFavoriteMailList(@PathVariable("companyNo") String companyNo,
+                                                     Authentication authentication) {
+        String empId = authentication.getName();
+        return mailService.getFavoriteMailList(empId);
+    }
+
+    @PostMapping("/favorites/add")
+    @ResponseBody
+    public String addFavorite(@PathVariable("companyNo") String companyNo,
+                              @RequestParam String mailId,
+                              Authentication authentication) throws Exception {
+        String empId = authentication.getName();
+        mailService.addFavorite(empId, mailId);
+        return "success";
+    }
+
+    @PostMapping("/favorites/remove")
+    @ResponseBody
+    public String removeFavorite(@PathVariable("companyNo") String companyNo,
+                                 @RequestParam String mailId,
+                                 Authentication authentication) throws Exception {
+        String empId = authentication.getName();
+        mailService.removeFavorite(empId, mailId);
+        return "success";
+    }
+    
+    @GetMapping("/send")
+    public String mailSendForm(
+    	@PathVariable("companyNo") String companyNo
+    	, Model model
+    ) {
+    	model.addAttribute("companyNo", companyNo);
+    	return "groupware/mail/mailSendForm";
+    }
+    
+    @PostMapping("/send")
+    @ResponseBody
+    public String sendMail(@PathVariable String companyNo,
+    					   @ModelAttribute MailSentLogVO mailLogVO,
+                           Authentication authentication) {
+        String fromEmpId = authentication.getName();
+        mailLogVO.setEmpId(fromEmpId); // 로그인 사용자 ID 저장
+
+        try {
+            mailService.sendMailWithLog(mailLogVO); // VO 기반으로 전송 + 로그 저장
+            return "success";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "fail";
+        }
+    }
+} 

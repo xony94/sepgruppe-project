@@ -1,0 +1,33 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 20.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+// DOMContentLoaded 이벤트가 발생하면 실행
+let path = document.body.getAttribute('data-context-path');
+
+document.addEventListener("DOMContentLoaded", () => {
+	waitingDocDetail();
+});
+
+// waitingDocTr 결재 대기 문서 문서 상세보기
+function waitingDocDetail(){
+	const docRows = document.querySelectorAll(".waitingDocTr");
+
+    docRows.forEach(row => {
+        row.addEventListener("click", () => {
+            const aprvlDocNo = row.dataset.docNo;
+
+            // 상세 페이지로 이동
+            location.href = `${path}/apprHome/aprvlDocDetail/${aprvlDocNo}`;
+        });
+    });
+
+
+}
+

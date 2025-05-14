@@ -1,0 +1,38 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	JSW            최초 생성
+ *
+ * </pre>
+ */
+$(document).ready(function () {
+       $(".dept-item").click(function () {
+           var deptCd = $(this).data("id");
+           $.ajax({
+               url: contextPath + companyNo +"/organization/admin/department/" + deptCd,
+               method: "GET",
+               success: function (data) {
+                   $("#deptName").text(data.deptName);
+                   $("#deptCode").text(data.deptCd);
+                   $("#deptShort").text(data.deptShort);
+                   $("#deptCreated").text(data.createAt);
+                   $("#parentDept").text(data.parentDeptCd);
+               }
+           });
+       });
+   });
+   function toggleSubDepartments(deptId) {
+       var subDept = document.getElementById("sub-" + deptId);
+       if (subDept.style.display === "none") {
+           subDept.style.display = "block"; // 하위 부서 보이기
+       } else {
+           subDept.style.display = "none"; // 하위 부서 숨기기
+       }
+   }
+   function toggleTree(deptCd) {
+       $("#subDept-" + deptCd).toggle(); // 하위 부서 토글
+       $("#employees-" + deptCd).toggle(); // 사원 리스트 토글
+   }

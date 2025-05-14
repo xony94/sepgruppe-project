@@ -1,0 +1,42 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 21.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+
+// DOMContentLoaded 이벤트가 발생하면 실행
+document.addEventListener("DOMContentLoaded", () => {
+    // 현재 페이지의 basePath를 계산 (기본 경로 및 파일 이름 제외)
+    const basePath = window.location.origin + window.location.pathname.split("/").slice(0, -1).join("/");
+	const tbody = document.querySelector('tbody');
+	
+	// 클릭한 요소가 tr인 경우에만 처리
+    var targetRow = event.target.closest('tr'); // 클릭한 tr 요소
+    if (targetRow && targetRow.classList.contains('docRow')) {
+        var docFrmNo = targetRow.id;  // tr 요소의 id 값(docFrmNo) 추출
+        console.log("선택된 docFrmNo:", docFrmNo);
+        
+        // AJAX 요청: 양식.html 파일을 가져오고, docFrmNo 파라미터를 전송
+        $.ajax({
+            url: '양식.html',  // 실제 양식 HTML이 위치한 경로로 수정하세요.
+            type: 'GET',
+            data: { docFrmNo: docFrmNo },
+            success: function(response) {
+                // 응답 받은 HTML을 모달의 본문 영역에 삽입하고 모달을 표시
+                document.querySelector("#myModal .modal-body").innerHTML = response;
+                $('#myModal').modal('show');  // Bootstrap 모달 표시
+            },
+            error: function(xhr, status, error) {
+                alert("AJAX 요청 중 오류가 발생했습니다: " + error);
+            }
+        });
+    }
+
+});
+
+

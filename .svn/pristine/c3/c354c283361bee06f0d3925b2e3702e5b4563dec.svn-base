@@ -1,0 +1,34 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 20.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+// DOMContentLoaded 이벤트가 발생하면 실행
+let path = document.body.getAttribute('data-context-path');
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 모든 문서에 대해 상세보기 함수 실행
+    allDocDetail();
+});
+
+// 모든 문서 클릭 시 상세보기로 이동
+function allDocDetail() {
+    // 결재 대기, 기안 진행, 결재 완료 문서 모두 클릭 가능하게
+    const docRows = document.querySelectorAll("tbody tr[data-doc-no]");
+
+    docRows.forEach(row => {
+        row.addEventListener("click", () => {
+            const aprvlDocNo = row.dataset.docNo;
+            const docType = row.dataset.docType; // 문서 종류
+
+            // 상세 페이지로 이동 (문서 번호와 문서 종류를 함께 전송)
+            location.href = `${path}/apprHome/aprvlDocDetail/${aprvlDocNo}?docType=${docType}`;
+        });
+    });
+}
+

@@ -1,0 +1,29 @@
+package kr.or.ddit.works.project.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 공유 프로젝트 일감 컨트롤러
+ * @author KKM
+ * @since 2025. 3. 25.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 25.     	KKM	          최초 생성
+ *
+ * </pre>
+ */
+@Slf4j
+@Controller
+@RequestMapping("/{companyNo}/ganttcharttask")
+public class GanttChartTaskController {
+	
+}

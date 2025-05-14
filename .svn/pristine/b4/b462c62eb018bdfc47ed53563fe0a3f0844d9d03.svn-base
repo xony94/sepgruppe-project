@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.works.mybatis.mappers.ProjectMapper">
+
+	<!-- 프로젝트 목록 조회 -->
+	<select id="selectListAllProject" parameterType="String" resultType="kr.or.ddit.works.project.vo.ProjectVO">
+	    SELECT 
+	         PROJECT_NO, 
+		    EMP_ID, 
+		    PROJECT_TITLE, 
+		    PROJECT_START_TIME AS PROJECT_START_TIME, 
+		    PROJECT_END_TIME AS PROJECT_END_TIME, 
+		    PROJECT_STATUS, 
+		    PROJECT_DESC 
+	    FROM 
+	        PROJECT  -- 실제 테이블 이름
+	    WHERE 
+	        EMP_ID = #{empId}  -- 사용자의 ID로 필터링
+	    ORDER BY 
+	        PROJECT_START_TIME  -- 시작일 기준으로 정렬
+	</select>
+
+    <select id="selectProjectDetail" resultType="kr.or.ddit.works.project.vo.ProjectVO">
+      SELECT 
+		    p.PROJECT_NO, 
+		    p.PROJECT_TITLE, 
+		    p.PROJECT_START_TIME, 
+		    p.PROJECT_END_TIME, 
+		    p.PROJECT_STATUS, 
+		    p.PROJECT_DESC,
+		    pp.EMP_ID, 
+		    e.EMP_NM, 
+		    t.TASK_NO, 
+		    t.TASK_TITLE, 
+		    t.PROGRESS, 
+		    t.PRIORITY
+		FROM 
+		    PROJECT p
+		LEFT JOIN 
+		    PROJECT_PARTICIPANT pp ON p.PROJECT_NO = pp.PROJECT_NO
+		LEFT JOIN 
+		    EMPLOYEE e ON pp.EMP_ID = e.EMP_ID
+		LEFT JOIN 
+		    TASK t ON pp.PROJECT_NO = t.PROJECT_NO
+		WHERE 
+		    p.PROJECT_NO = #{projectNo}
+    </select>
+	
+	<insert id="insertProject" parameterType="kr.or.ddit.works.project.vo.ProjectVO">
+    INSERT INTO project (
+        project_no,
+        emp_id,
+        project_title,
+        project_start_time,
+        project_end_time,
+        project_status,
+        project_desc
+    ) VALUES (
+        #{projectNo},
+        #{empId},
+        #{projectTitle},
+        #{projectStartTime},
+        #{projectEndTime},
+        #{projectStatus},
+        #{projectDesc}
+    )
+</insert>
+	
+	
+</mapper>
+
+	

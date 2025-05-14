@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.works.mybatis.mappers.EmployeeMapper">
+
+
+    <!-- 마이페이지 정보 수정 -->
+    <update id="updateEmployee">
+        UPDATE EMPLOYEE
+        SET
+        	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(empPw)">
+	        EMP_PW = #{empPw,jdbcType=VARCHAR},
+	        </if>
+              EMP_ZIP = #{empZip,jdbcType=VARCHAR}
+            , EMP_ADD1 = #{empAdd1,jdbcType=VARCHAR}
+            , EMP_ADD2 = #{empAdd2,jdbcType=VARCHAR}
+            , EMP_EMAIL = #{empEmail,jdbcType=VARCHAR}
+            , EMP_PHONE = #{empPhone,jdbcType=VARCHAR}
+            <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(empImg)">
+            , EMP_IMG = #{empImg,jdbcType=VARCHAR}
+            </if>
+        WHERE EMP_ID = #{empId,jdbcType=VARCHAR}
+    </update>
+
+    <!-- 회원정보 조회 -->
+    <select id="selectEmployee">
+        SELECT
+            e.EMP_ID,
+	        e.COMPANY_NO,
+	        e.POSITION_CD,
+	        p.POSITION_NAME,  <!-- 추가: 직책 이름 가져오기 -->
+	        e.DEPT_CD,
+	        e.EMP_NO,
+	        e.EMP_NM,
+	        e.EMP_PW,
+	        e.EMP_ZIP,
+	        e.EMP_ADD1,
+	        e.EMP_ADD2,
+	        e.EMP_EMAIL,
+	        e.EMP_PHONE,
+	        TO_CHAR(e.EMP_REGDATE, 'YYYY-MM-DD') AS EMP_REGDATE,
+	        e.EMP_RETIRE,
+	        e.EMP_IMG,
+	        e.EMP_BANK,
+	        e.EMP_DEPOSITOR,
+	        e.EMP_BANKNO,
+	        e.EMP_GENDER
+	    FROM EMPLOYEE e
+	    LEFT OUTER JOIN POSITION p ON e.POSITION_CD = p.POSITION_CD
+	    WHERE e.EMP_ID = #{empId,jdbcType=VARCHAR}
+    </select>
+
+	<!-- 마이페이지 이미지 삭제 -->
+	<update id="deleteImage">
+		UPDATE
+			EMPLOYEE
+		SET
+			EMP_IMG = NULL
+		WHERE
+			EMP_ID = #{empId,jdbcType=VARCHAR}
+	</update>
+</mapper>

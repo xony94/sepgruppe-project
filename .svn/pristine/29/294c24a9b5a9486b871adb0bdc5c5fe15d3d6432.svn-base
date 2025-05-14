@@ -1,0 +1,77 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 20.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+
+// DOMContentLoaded 이벤트가 발생하면 실행
+document.addEventListener("DOMContentLoaded", () => {
+    // 기본 경로(basePath)와 관리 페이지 경로(adminBasePath) 설정
+    const basePath = window.location.pathname.split("/").slice(0, -2).join("/");
+    const adminBasePath = window.location.pathname.split("/").slice(0, -3).join("/");
+
+    // 현재 페이지가 관리자 페이지인지 확인하는 조건 (예시)
+    const isAdminPage = window.location.pathname.includes("admin");
+
+    // 사용해야 할 경로를 동적으로 설정
+    const path = isAdminPage ? adminBasePath : basePath;
+
+    // 결재 양식 전체 조회 (일반 사원 새 문서 작성 페이지)
+    const initFancyTree = () => {
+        $("#tree").fancytree({
+            source: {
+                url: `${path}/appr/parentFolder`,
+                cache: false
+            },
+            lazyLoad: function(event, data) {
+                var node = data.node;
+                let mode = "document";
+                if (!node.data.parentDocFolder) {
+                    mode = "folder";
+                }
+                // Load child nodes via Ajax
+                data.result = {
+                    url: `${path}/appr/childrenFolder`,
+                    data: {mode: mode, parent: node.key},
+                    cache: false
+                };
+            },
+            activate: function(event, data) {
+                var node = data.node;
+                if (!node.folder) {
+                    $.ajax({
+                        url: `${path}/approval/detail`,  // 서버에서 문서 내용을 받아오는 URL
+                        type: 'GET',
+                        data: {docFrmNo: node.key},  // docfrmNo를 서버로 전송
+                        success: function(response) {
+                            if (response && response.docFrmContent) {
+                                CKEDITOR.instances['editor'].setData(response.docFrmContent);
+                            } else {
+                                alert('문서를 불러오는 데 실패했습니다.');
+                            }
+                        },
+                        error: function() {
+                            alert('서버와의 연결에 실패했습니다.');
+                        }
+                    });
+                }
+            },
+            beforeSelect: function(event, data) {
+                if (data.node.isFolder()) {
+                    return false; // 폴더 노드는 선택을 방지
+                }
+            }
+        });
+    };
+
+    // FancyTree 초기화
+    if (document.querySelector('#tree')) {
+        initFancyTree();
+    }
+
+});

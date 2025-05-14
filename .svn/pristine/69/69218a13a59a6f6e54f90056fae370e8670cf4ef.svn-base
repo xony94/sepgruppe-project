@@ -1,0 +1,219 @@
+let path;
+const newDocBtn = document.querySelector("#newDocBtn");
+
+document.addEventListener("DOMContentLoaded", () => {
+    // 데이터 경로 가져오기
+    path = document.body.getAttribute('data-context-path');
+    console.log(path);
+
+    // fancyTree 초기화 (tree 요소가 있을 때만 실행)
+    if (document.querySelector('#tree')) {
+        initFancyTree();
+    }
+
+    // 새 양식 등록 버튼 처리 (newDocBtn이 있을 때만)
+    const newDocBtn = document.querySelector('#newDocBtn');
+    if (newDocBtn) {
+        newDocBtn.addEventListener("click", handleNewDocBtnClick);
+    }
+
+    const apprInfoModal = document.querySelector("#apprInfoModal");
+
+	// ** 결재정보 모달 **
+    // 모달이 열릴 때마다 실행할 이벤트 등록
+    apprInfoModal.addEventListener("shown.bs.modal", () => {
+        // 처음 모달이 열릴 때만 fancyTree를 초기화
+        if (!window.fancyTreeInitialized) {
+            depInitFancyTree(); // fancytree 초기화 함수 호출
+            window.fancyTreeInitialized = true; // fancyTree가 초기화 되었음을 표시
+        }
+        depInitDragAndDrop(); // 드래그앤드롭 초기화
+    });
+
+    // 저장 버튼 클릭 시, 결재 라인 저장 함수 실행
+    document.querySelector("#saveButton").addEventListener("click", saveApprLine);
+    depInitDragAndDrop(); // 페이지 로드 시, 드래그앤드롭 초기화
+});
+
+// FancyTree 초기화 함수
+function initFancyTree() {
+    $("#tree").fancytree({
+        source: { url: `${path}/appr/parentFolder`, cache: false },
+        lazyLoad: handleLazyLoad,
+        activate: handleNodeActivate,
+        beforeSelect: preventFolderSelect
+    });
+}
+
+// Lazy Load 핸들러 (폴더 데이터 로드)
+function handleLazyLoad(event, data) {
+    const node = data.node;
+    let mode = node.data.parentDocFolder ? "document" : "folder";
+    data.result = { url: `${path}/appr/childrenFolder`, data: { mode: mode, parent: node.key }, cache: false };
+}
+
+// 노드 활성화 핸들러
+function handleNodeActivate(event, data) {
+    const node = data.node;
+    if (node.isFolder()) {
+        loadFolderDocuments(node.key);
+    } else {
+        loadDocumentDetail(node.key);
+    }
+}
+
+// 폴더 선택 방지
+function preventFolderSelect(event, data) {
+    if (data.node.isFolder()) return false;
+}
+
+// 폴더 문서 목록 조회 (AJAX 요청)
+function loadFolderDocuments(docFolderNo) {
+    $.ajax({
+        url: `${path}/approval/admin/folderDoc`,
+        type: 'GET',
+        data: { docFolderNo: docFolderNo },
+        success: updateDocumentTable,
+        error: () => alert('문서 목록을 불러오는 데 실패했습니다.')
+    });
+}
+
+// 문서 상세 정보 불러오기 (AJAX 요청)
+function loadDocumentDetail(docFrmNo) {
+    $.ajax({
+        url: `${path}/approval/detail`,
+        type: 'GET',
+        data: { docFrmNo: docFrmNo },
+        success: (response) => {
+            if (response && response.docFrmContent) {
+                document.querySelector('#templateDetails').innerHTML = response.docFrmContent;
+                initializeCKEditor();
+            } else {
+                alert('문서를 불러오는 데 실패했습니다.');
+            }
+        },
+        error: () => alert('서버와의 연결에 실패했습니다.')
+    });
+}
+
+// CKEditor 초기화 함수 (중복 제거)
+function initializeCKEditor(callback) {
+    document.querySelectorAll("#editor").forEach((editorElement) => {
+        if (!editorElement.classList.contains("ckeditor-initialized")) {
+            CKEDITOR.replace(editorElement, { versionCheck: false, height: '100%', width: '100%' });
+            editorElement.classList.add("ckeditor-initialized");
+        }
+    });
+
+    // CKEditor 초기화 후 callback 실행
+    if (callback) callback();
+}
+
+// 문서 테이블 업데이트 함수 (admin)
+function updateDocumentTable(documents) {
+    const tableBody = document.querySelector("#docTableTbody");
+    tableBody.innerHTML = "";
+    if (documents.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='2'>문서가 없습니다.</td></tr>";
+        return;
+    }
+
+    documents.forEach(doc => {
+        const row = document.createElement("tr");
+        row.id = doc.docFrmNo;
+        row.dataset.name = doc.docFrmName;
+        row.dataset.content = doc.docFrmContent;
+        row.dataset.enabled = doc.isEnabled;
+        
+        row.innerHTML = `
+            <td>${doc.docFrmName}</td>
+            <td>${doc.isEnabled}</td>
+        `;
+        row.style.cursor = "pointer"; // 🎯 마우스를 올리면 손가락 모양으로 변경
+    
+        tableBody.appendChild(row);
+        row.addEventListener("click", handleRowClick); // 클릭 이벤트 추가
+    });
+}
+
+function handleRowClick(event) {
+    const row = event.currentTarget;  // 클릭한 행을 가져옵니다.
+    console.log("row", row);
+    console.log("row.dataset", row.dataset);
+    console.log(row.dataset.name);
+
+    // 데이터 가져오기
+    const docFrmName = row.dataset.name;  // 문서 제목
+    const editorContent = row.dataset.content;  // 문서 내용 (CKEditor용)
+    const isEnabled = row.dataset.enabled === 'Y';  // 활성화 여부 (boolean)
+
+    // 2. 양식에 데이터 채우기
+    setModalContent(docFrmName, isEnabled);  // 제목과 활성화 여부 설정
+
+    // 3. CKEditor에 내용 삽입
+    const editorInstance = CKEDITOR.instances['editor'];  // CKEditor 인스턴스 가져오기
+    if (editorInstance) {
+        editorInstance.setData(editorContent);  // 이미 CKEditor가 초기화되어 있으면 내용 삽입
+    } else {
+        // CKEditor가 초기화되지 않았다면, 초기화 후 내용 삽입
+        initializeCKEditor(() => {
+            const editorInstance = CKEDITOR.instances['editor'];
+            if (editorInstance) {
+                editorInstance.setData(editorContent);  // CKEditor에 내용 삽입
+            }
+        });
+    }
+
+    // 4. 모달 띄우기
+    openModal();  // 모달을 띄웁니다.
+}
+
+function setModalContent(docFrmName, isEnabled) {
+    // 양식에 데이터를 채웁니다.
+    document.querySelector("#docFrmName").value = docFrmName;  // 제목 설정
+    document.querySelector("#isEnabled").checked = isEnabled;  // 활성화 여부 설정
+}
+
+function openModal() {
+    // 모달 요소 가져오기
+    const modalElement = document.querySelector("#docDetailModal");
+    if (modalElement) {
+        // Bootstrap 모달 인스턴스 생성 후 띄우기
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();  // 모달 띄우기
+    } else {
+        // 모달 요소가 없으면 에러 출력
+        console.error("모달 요소가 존재하지 않습니다.");
+    }
+}
+
+// 미리보기 기능
+function previewContent() {
+    const editorInstance = CKEDITOR.instances["editor"];
+    if (!editorInstance) {
+        alert("CKEditor가 초기화되지 않았습니다.");
+        return;
+    }
+    const content = editorInstance.getData();
+    localStorage.setItem("ckeditor_content", content);
+    let newWindow = window.open(`${pageContext.request.contextPath}/${companyNo}/content`, "_blank", "width=800,height=600");
+    newWindow.addEventListener("beforeunload", () => {
+        localStorage.removeItem("ckeditor_content");
+    });
+}
+
+// 새 양식 등록 (관리자)
+function handleNewDocBtnClick(){
+	// 현재 선택된 폴더 확인
+    const selectedNode = $("#tree").fancytree("getActiveNode");
+	console.log("selectedNode");
+
+    if (!selectedNode || !selectedNode.isFolder()) {
+        alert("문서를 추가할 폴더를 먼저 선택하세요.");
+        return;
+    }
+
+    const docFolderNo = selectedNode.key; // 선택된 폴더 ID
+    location.href = `${path}/approval/admin/newDocAdd?docFolderNo=${docFolderNo}`;
+	
+}

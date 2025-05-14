@@ -1,0 +1,113 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+// DOMContentLoaded 이벤트가 발생하면 실행
+document.addEventListener("DOMContentLoaded", () => {
+    // 기본 경로(basePath) 설정
+    const apprBasePath = window.location.pathname.split("/").slice(0, -2).join("/");
+    const apprInfoModal = document.querySelector("#apprInfoModal");
+    // 테이블의 tbody에 id를 부여해서 드랍 시 행을 추가할 수 있도록 합니다.
+    const approvalTableBody = document.querySelector("#approvalTableBody");
+
+    // FancyTree 초기화 함수
+    const initFancyTree = () => {
+        $("#depTree").fancytree({
+            source: {
+                url: `${apprBasePath}/organization/parentDep`,
+                cache: false
+            },
+            extensions: ["dnd5"],
+            dnd5: {
+                preventVoidMoves: true,     // 빈 공간으로 드롭하는 것을 방지
+                preventRecursion: true,     // 부모 노드를 자식 노드로 이동하는 것을 방지 (무한 루프 방지)
+                autoExpandMS: 400,          // 노드 위에서 400ms 머무르면 자동으로 확장
+                dragStart: function(node, data) {
+                    // 최하위 자식(leaf)만 드래그 가능하도록 처리
+                    if (!node.folder) {
+                        const name = node.title;
+                        const department = node.parent ? node.parent.title : "";
+                        // 이름과 부서를 쉼표로 구분하여 dataTransfer에 저장
+                        data.dataTransfer.setData("text/plain", `${name},${department}`);
+                        return true;
+                    }
+                    return false;
+                },
+                dragEnter: function(node, data) {
+                    // 최하위 자식(leaf)만 드롭 허용
+                    return !node.folder;
+                },
+                dragDrop: function(node, data) {
+                    // FancyTree 내부 이동 처리가 필요하면 여기에 작성 (현재는 사용하지 않음)
+                }
+            },
+            lazyLoad: function(event, data) {
+                var node = data.node;
+                let mode = "employee";
+                if (!node.data.parentDeptCd) {
+                    mode = "department";
+                }
+                // Ajax를 통한 자식 노드 로드
+                data.result = {
+                    url: `${apprBasePath}/organization/childeDep`,
+                    data: { mode: mode, parent: node.key },
+                    cache: false
+                };
+            }
+        });
+    };
+
+    // 테이블 tbody(approvalTableBody)에 드래그 이벤트 추가
+    approvalTableBody.addEventListener("dragover", function(event) {
+        event.preventDefault(); // 기본 동작을 막아 드롭을 허용
+        approvalTableBody.style.backgroundColor = "#f0f0f0";  // 드롭 영역 강조
+    });
+
+    approvalTableBody.addEventListener("dragleave", function(event) {
+        approvalTableBody.style.backgroundColor = "";  // 드래그가 떠날 때 강조 제거
+    });
+
+    approvalTableBody.addEventListener("drop", function(event) {
+        event.preventDefault();  
+        approvalTableBody.style.backgroundColor = "";  
+
+        // dataTransfer에서 저장된 문자열 데이터를 가져옴 (예: "홍길동,개발팀")
+        const rawData = event.dataTransfer.getData("text/plain");
+        if (rawData) {
+            const [name, department] = rawData.split(",");
+            
+            // 새로운 테이블 행(<tr>) 생성
+            const newRow = document.createElement("tr");
+            newRow.innerHTML = `
+				<td>&nbsp;</td>
+                <td>
+                    <select>
+                        <option>타입</option>
+                        <option>결재</option>
+                    </select>
+                </td>
+                <td>${name}</td>
+                <td>${department}</td>
+                <td>상태</td>
+                <td><i class="fa fa-trash delete-icon" style="cursor:pointer;"></i></td>
+            `;
+
+            // 새 행을 테이블의 tbody에 추가
+            approvalTableBody.appendChild(newRow);
+
+            // 삭제 아이콘에 클릭 이벤트 추가 (행 삭제)
+            newRow.querySelector(".delete-icon").addEventListener("click", function() {
+                newRow.remove();
+            });
+        }
+    });
+
+    // 모달이 열릴 때 FancyTree 로드
+    apprInfoModal.addEventListener("shown.bs.modal", initFancyTree);
+});

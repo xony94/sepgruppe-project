@@ -1,0 +1,31 @@
+package kr.or.ddit.works.mybatis.mappers;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+
+/**
+ * 메일 매퍼
+ * @author JYS
+ * @since 2025. 3. 16.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 16.     	JYS	          최초 생성
+ *
+ * </pre>
+ */
+@Mapper
+public interface MailMapper {
+	List<MailReceptionVO> selectMailList();
+	
+	int favorite(@Param("mailId") String mailId, @Param("favorite") String favorite);
+
+}

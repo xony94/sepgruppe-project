@@ -1,0 +1,71 @@
+package kr.or.ddit.works.mybatis.mappers;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+import kr.or.ddit.works.organization.vo.EmployeeVO;
+import kr.or.ddit.works.organization.vo.OrganizationVO;
+
+/**
+ * 조직관리 매퍼
+ * @author JYS
+ * @since 2025. 3. 16.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 16.     	JYS	          최초 생성
+ *
+ * </pre>
+ */
+/**
+ * 
+ * @author JYS
+ * @since 2025. 3. 26.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 26.     	JYS	          최초 생성
+ *
+ * </pre>
+ */
+@Mapper
+public interface OrganizationMapper {
+	
+	/**
+	 * 최상위 부서 조회
+	 * @return
+	 */
+	public List<DepartmentVO> selectParentDep();
+	
+	
+	/**
+	 * 하위 부서 조회
+	 * @return
+	 */
+	public List<DepartmentVO> selectChildDep(@Param("deptCd")String deptCd);
+	
+	/**
+	 * 부서 내 사원 조회
+	 * @return
+	 */
+	public List<EmployeeVO> selectEmployee(@Param("deptCd")String deptCd); 
+	
+	List<OrganizationVO> searchEmployees(@Param("keyword") String keyword);
+    
+	List<OrganizationVO> searchByDepartment(
+        @Param("deptName") String deptName,
+        @Param("keyword") String keyword
+    );
+
+}

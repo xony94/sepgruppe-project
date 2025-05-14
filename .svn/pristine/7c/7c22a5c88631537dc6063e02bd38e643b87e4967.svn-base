@@ -1,0 +1,67 @@
+package kr.or.ddit.works.organization.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.works.mybatis.mappers.OrganizationMapper;
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+import kr.or.ddit.works.organization.vo.EmployeeVO;
+
+@Service
+public class OrganizationServiceImpl implements OrganizationService {
+	
+	@Autowired
+	private OrganizationMapper mapper;
+	
+	@Override
+	public List<DepartmentVO> getAllDepartments(String companyNo) {
+		// 모든 부서 데이터 가져오기
+	    List<DepartmentVO> allDepartments = mapper.selectAllDepartments(companyNo);
+
+	    // 부모 부서를 key로, 하위 부서를 리스트로 저장
+	    Map<String, DepartmentVO> departmentMap = new HashMap<>();
+	    List<DepartmentVO> topDepartments = new ArrayList<>();
+
+	    // 모든 부서를 맵에 저장 (deptCd 기준)
+	    for (DepartmentVO dept : allDepartments) {
+	        departmentMap.put(dept.getDeptCd(), dept);
+	    }
+
+	    // 트리 구조 만들기
+	    for (DepartmentVO dept : allDepartments) {
+	        // 🚀 부서별 사원 정보 추가
+	        List<EmployeeVO> employees = mapper.selectEmployeesByDept(dept.getDeptCd());
+	        dept.setEmployee(employees);
+
+	        if (dept.getParentDeptCd() == null || dept.getParentDeptCd().isEmpty()) {
+	            topDepartments.add(dept);
+	        } else {
+	            DepartmentVO parentDept = departmentMap.get(dept.getParentDeptCd());
+	            if (parentDept != null) {
+	                parentDept.getSubDepartments().add(dept);
+	            }
+	        }
+	    }
+	    return topDepartments;
+	}
+	
+	@Override
+	public DepartmentVO getDepartment(String deptCd, String companyNo) {
+		Map<String, Object> params = new HashMap<>();
+        params.put("deptCd", deptCd);
+        params.put("companyNo", companyNo);
+		return mapper.selectDepartment(params);
+	}
+
+	@Override
+	public int addDepartment(DepartmentVO department) {
+		return mapper.insertDepartment(department);
+	}
+
+
+}

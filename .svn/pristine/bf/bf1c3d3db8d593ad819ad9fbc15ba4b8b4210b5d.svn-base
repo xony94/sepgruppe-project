@@ -1,0 +1,51 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일      			수정자           수정내용
+ *  ============   	============== =======================
+ *  2025. 3. 28.     	KMJ            최초 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<link href="${pageContext.request.contextPath }/resources/groupware/css/mail/mailList.css" rel="stylesheet">
+
+<div class="mail-container">
+    <!-- 왼쪽 메뉴 -->
+    <div class="mailSidebar">
+        <h3>📬 메일함</h3>
+        <a href="<c:url value='/${companyNo}/mail'/>" class="menu-item">받은 메일함</a>
+        <a href="<c:url value='/${companyNo}/mail/mySentMail'/>" class="menu-item">보낸 메일함</a>
+    </div>
+    <!-- 오른쪽 메일 리스트 -->
+    <div class="content-area">
+		<c:if test="${empty mailList}">
+		    <div class="no-mail">📭 받은 메일이 없습니다.</div>
+		</c:if>
+		
+		<c:if test="${not empty mailList}">
+		    <table class="table table-head-bg-primary mt-4">
+		        <thead>
+		            <tr>
+		                <th scope="col">#</th>
+                        <th scope="col">발신자</th>
+                        <th scope="col">제목</th>
+                        <th scope="col">받은 날짜</th>
+		            </tr>
+		        </thead>
+		        <tbody>
+		            <c:forEach var="mail" items="${mailList}">
+		                <tr>
+		                	<td>1</td>
+		                    <td class="mail-from">${mail.fromEmail}</td>
+		                    <td class="mail-subject"><a href="<c:url value='/${companyNo}/mail/mailContent/${mail.mailId}'/>">${mail.mailSubject}</td>
+		                    <td class="mail-date">${mail.mailDate}</td>
+		                </tr>
+		            </c:forEach>
+		        </tbody>
+		    </table>
+		</c:if>
+	</div>	
+</div>
+

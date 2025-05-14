@@ -1,0 +1,233 @@
+package kr.or.ddit.works.mail.service;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.google.api.services.gmail.Gmail;
+import com.google.api.services.gmail.model.ListMessagesResponse;
+import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.MessagePart;
+import com.google.api.services.gmail.model.MessagePartHeader;
+import com.google.api.services.gmail.model.ModifyMessageRequest;
+
+import kr.or.ddit.works.mail.config.MailConfig;
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+import kr.or.ddit.works.mybatis.mappers.MailMapper;
+
+@Service
+public class MailServiceImpl implements MailService {
+
+	@Autowired
+	private MailMapper mailMapper;
+
+	//받은메일함
+	@Override
+	public List<MailReceptionVO> getMailList() throws Exception {
+		Gmail service = MailConfig.getGmailService();
+        ListMessagesResponse response = service.users().messages()
+						        		.list("me")
+						        		.setMaxResults(10L)
+						        		.execute();
+        List<Message> messages = response.getMessages();
+        List<MailReceptionVO> gmailMessageList = new ArrayList<>();
+        
+        if (messages != null) {
+            for (Message message : messages) {
+            	Message fullMessage = service.users().messages().get("me", message.getId()).execute();
+            	MailReceptionVO vo = new MailReceptionVO();
+                vo.setEmpId("me");
+                vo.setMailId(message.getId());
+                
+                List<MessagePartHeader> headers = fullMessage.getPayload().getHeaders();
+                if (headers != null) {
+                    for (MessagePartHeader header : headers) {
+                        String headerName = header.getName();
+                        String headerValue = header.getValue();
+
+                        if ("Subject".equalsIgnoreCase(headerName)) {
+                            vo.setMailSubject(headerValue); // 메일 제목 설정
+                        } else if ("From".equalsIgnoreCase(headerName)) {
+                            vo.setFromEmail(headerValue); // 발신자 이메일 주소 설정
+                        } else if ("Date".equalsIgnoreCase(headerName)) {
+                        	vo.setMailDate(headerValue);
+                        }
+                    }
+                }
+                gmailMessageList.add(vo);
+	        }
+		}
+        
+        
+		return gmailMessageList;
+	}
+
+	//보낸메일함
+	@Override
+	public List<MailReceptionVO> getSentMailList() throws Exception {
+		Gmail service = MailConfig.getGmailService();
+	    ListMessagesResponse response = service.users().messages()
+	        .list("me")
+	        .setLabelIds(Collections.singletonList("SENT"))  // 보낸메일함 라벨 지정
+	        .setMaxResults(10L)
+	        .execute();
+
+	    List<Message> messages = response.getMessages();
+	    List<MailReceptionVO> sentMailList = new ArrayList<>();
+
+	    if (messages != null) {
+	        for (Message message : messages) {
+	            Message fullMessage = service.users().messages().get("me", message.getId()).execute();
+	            MailReceptionVO vo = new MailReceptionVO();
+	            vo.setEmpId(message.getId());
+
+	            List<MessagePartHeader> headers = fullMessage.getPayload().getHeaders();
+	            if (headers != null) {
+	                for (MessagePartHeader header : headers) {
+	                    String headerName = header.getName();
+	                    String headerValue = header.getValue();
+
+	                    if ("Subject".equalsIgnoreCase(headerName)) {
+	                        vo.setMailSubject(headerValue); // 제목
+	                    } else if ("To".equalsIgnoreCase(headerName)) {
+	                        vo.setToEmail(headerValue); // 수신자 (보낸메일 기준)
+	                    } else if ("Date".equalsIgnoreCase(headerName)) {
+	                        vo.setMailDate(headerValue); // 보낸 날짜
+	                    }
+	                }
+	            }
+	            sentMailList.add(vo);
+	        }
+	    }
+	    return sentMailList;
+	}
+
+//	@Override
+//	public String getMailContent(String mailId) throws Exception {
+//		Gmail service = MailConfig.getGmailService();
+//		Message message = service.users().messages().get("me", mailId).setFormat("full").execute();
+//		
+//		if (message.getPayload().getParts() != null) {
+//	        for (MessagePart part : message.getPayload().getParts()) {
+//	            String mimeType = part.getMimeType();
+//	            String encodedData = part.getBody().getData();
+//
+//	            if (encodedData != null) {
+//	                // 공백 제거 (URL-safe base64는 종종 줄바꿈/공백 포함됨)
+//	                encodedData = encodedData.replaceAll("\\s+", "");
+//
+//	                byte[] decodedBytes = Base64.getUrlDecoder().decode(encodedData);
+//	                String content = new String(decodedBytes, StandardCharsets.UTF_8);
+//
+//	                if ("text/plain".equals(mimeType) || "text/html".equals(mimeType)) {
+//	                    return content;
+//	                }
+//	            }
+	
+//	        }
+//	    }
+//		return "(본문없음)";
+//	}
+	
+	// 받은 메일	내용 조회
+	@Override
+	public String getMailContent(String mailId) throws Exception {
+	    Gmail service = MailConfig.getGmailService();
+	    Message message = service.users().messages().get("me", mailId).setFormat("full").execute();
+
+	    return getMimeContent(message.getPayload());
+	}
+
+	private String getMimeContent(MessagePart part) {
+	    String mimeType = part.getMimeType();
+
+	    if ("text/html".equalsIgnoreCase(mimeType)) {
+	        String encodedData = part.getBody().getData();
+	        if (encodedData != null) {
+	            encodedData = encodedData.replaceAll("\\s+", "");
+	            byte[] decodedBytes = Base64.getUrlDecoder().decode(encodedData);
+	            return new String(decodedBytes, StandardCharsets.UTF_8);
+	        }
+	    }
+
+	    // multipart 처리
+	    if (part.getParts() != null) {
+	        for (MessagePart subPart : part.getParts()) {
+	            String result = getMimeContent(subPart);  // 재귀 호출
+	            if (result != null && !result.isEmpty()) {
+	                return result;
+	            }
+	        }
+	    }
+
+	    return "";
+	}
+	
+	// 보낸 메일 내용 조회
+	@Override
+	public String getSentMailContent(String mailId) throws Exception {
+		Gmail service = MailConfig.getGmailService();
+        Message message = service.users().messages().get("me", mailId).setFormat("full").execute();
+        return extractSentMailContent(message.getPayload());
+	}
+
+	private String extractSentMailContent(MessagePart part) throws IOException {
+	    String mimeType = part.getMimeType();
+	    StringBuilder content = new StringBuilder();
+
+	    if ("text/plain".equalsIgnoreCase(mimeType) || "text/html".equalsIgnoreCase(mimeType)) {
+	        String encodedData = part.getBody().getData();
+	        if (encodedData != null) {
+	            encodedData = encodedData.replaceAll("\\s+", "");
+	            byte[] decodedBytes = Base64.getUrlDecoder().decode(encodedData);
+	            content.append(new String(decodedBytes, StandardCharsets.UTF_8));
+	        }
+	    } else if (part.getParts() != null) {
+	        for (MessagePart subPart : part.getParts()) {
+	            content.append(extractSentMailContent(subPart)); // 재귀 호출
+	        }
+	    }
+	    return content.toString();
+	}
+	
+	@Override
+	public List<String> getFavoriteMailIds(String empId) {
+	    return mailMapper.selectFavoriteMailIds(empId);
+	}
+	
+
+	@Override
+    public void addFavorite(String empId, String mailId) throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("empId", empId);
+        map.put("mailId", mailId);
+        map.put("mailFav", 1); // 즐겨찾기 여부 설정
+        mailMapper.insertFavorite(map);
+    }
+
+    @Override
+    public void removeFavorite(String empId, String mailId) throws Exception {
+        Map<String, Object> map = new HashMap<>();
+        map.put("empId", empId);
+        map.put("mailId", mailId);
+        map.put("mailFav", 0); // 즐겨찾기 여부 설정
+        mailMapper.deleteFavorite(map);
+    }
+
+    @Override
+    public List<MailReceptionVO> getFavoriteMailList(String empId) {
+        return mailMapper.selectFavoriteMailList(empId);
+    }
+
+
+}

@@ -1,0 +1,142 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	SJH            최초 생성
+ *
+ * </pre>
+ */
+let surveyData = null;
+
+    async function fetchSurveyInfo() {
+        try {
+            const response = await fetch(`${contextPath}/${companyNo}/surveyApi/surveys/${surveyId}/details/data`);
+            if (!response.ok) throw new Error(`설문 정보 요청 실패: ${response.status}`);
+
+            const data = await response.json();
+            document.getElementById("surveyTitle").textContent = data.title || "제목 없음";
+            document.getElementById("surveyDescription").textContent = data.description || "설명 없음";
+            surveyData = data;
+        } catch (error) {
+            console.error("설문 정보 가져오기 실패:", error);
+            document.getElementById("surveyDescription").textContent = "설문 정보를 불러오는 중 오류가 발생했습니다.";
+        }
+    }
+
+    async function fetchSurveyResults() {
+        try {
+            const response = await fetch(`${contextPath}/${companyNo}/surveyApi/surveys/${surveyId}/responses`);
+            if (!response.ok) throw new Error(`API 요청 실패: ${response.status}`);
+
+            const data = await response.json();
+            if (!data.data || data.data.length === 0) {
+                document.getElementById("surveyDescription").textContent = "설문 응답이 없습니다.";
+                return;
+            }
+
+            processSurveyResults(data);
+        } catch (error) {
+            console.error("설문 결과 가져오기 실패:", error);
+            document.getElementById("surveyDescription").textContent = "설문 데이터를 불러오는 중 오류가 발생했습니다.";
+        }
+    }
+
+    function processSurveyResults(data) {
+        const questionStats = {};
+
+        data.data.forEach(response => {
+            response.pages.forEach(page => {
+                page.questions.forEach(question => {
+                    const questionId = question.id;
+                    const questionText = question.headings?.[0]?.heading || "질문 없음";
+
+                    if (!questionStats[questionId]) {
+                        questionStats[questionId] = {
+                            text: questionText,
+                            answers: {}
+                        };
+                    }
+
+                    if (question.answers) {
+                        question.answers.forEach(answer => {
+                            const choiceText = answer.choice_id 
+                                ? findChoiceText(questionId, answer.choice_id)
+                                : answer.text || "기타";
+
+                            questionStats[questionId].answers[choiceText] = 
+                                (questionStats[questionId].answers[choiceText] || 0) + 1;
+                        });
+                    }
+                });
+            });
+        });
+
+        renderQuestions(questionStats);
+        renderCharts(questionStats);
+    }
+
+    function findChoiceText(questionId, choiceId) {
+        const question = surveyData.pages.flatMap(page => page.questions)
+            .find(q => q.id === questionId);
+
+        if (question && question.answers && question.answers.choices) {
+            const choice = question.answers.choices.find(c => c.id === choiceId);
+            return choice ? choice.text : "알 수 없음";
+        }
+        return "알 수 없음";
+    }
+
+    function renderQuestions(stats) {
+        const questionList = document.getElementById("questionList");
+        questionList.innerHTML = "";
+
+        Object.entries(stats).forEach(([questionId, question]) => {
+            const questionDiv = document.createElement("div");
+            questionDiv.innerHTML = `<h4>${question.text}</h4>`;
+            questionList.appendChild(questionDiv);
+        });
+    }
+
+    function renderCharts(stats) {
+        const chartContainer = document.getElementById("chartContainer");
+        chartContainer.innerHTML = "";
+
+        Object.entries(stats).forEach(([questionId, question]) => {
+            const chartCanvas = document.createElement("canvas");
+            chartCanvas.id = `chart_${questionId}`;
+            chartCanvas.style.maxWidth = "400px";
+            chartCanvas.style.maxHeight = "400px";
+            chartContainer.appendChild(chartCanvas);
+
+            const labels = Object.keys(question.answers);
+            const data = Object.values(question.answers);
+
+            new Chart(chartCanvas, {
+                type: "pie",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ["#3498db", "#2ecc71", "#f1c40f", "#e74c3c", "#9b59b6"]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+    }
+
+    if (surveyId) {
+        fetchSurveyInfo();
+        fetchSurveyResults();
+    } else {
+        alert("잘못된 접근입니다.");
+        window.location.href = `${contextPath}/${companyNo}/survey`;
+    }

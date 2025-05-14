@@ -1,0 +1,200 @@
+document.addEventListener('DOMContentLoaded', function() {
+    let calendarEl = document.getElementById('calendar'); // 캘린더 요소
+	
+	document.body.addEventListener("click", function(event) { //수정버튼클릭
+	       if (event.target.id === "editSchdl") {
+	           handleEditSchedule();
+	       }
+	   });
+	   
+   document.body.addEventListener("click", function(event) { //삭제버튼클릭
+          if (event.target.id === "deleteSchdl") {
+              handleDeleteSchedule();
+          }
+      });   
+
+
+    // FullCalendar 생성
+    let calendar = new FullCalendar.Calendar(calendarEl, {
+        plugins: [ FullCalendar.Interaction.default ], // 인터랙션 플러그인 추가
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        editable: true, // 캘린더 내에서 이벤트 이동 가능
+        droppable: true, // 외부 이벤트 드롭 가능
+        events: clist, // 기존 이벤트 리스트
+        // 일정 클릭 시 모달 호출 (상세조회 이벤트)
+        eventClick: function(info) {
+            let eventUrl = info.event.url;
+            info.jsEvent.preventDefault();
+
+            if (eventUrl) {
+                $.ajax({
+                    url: eventUrl,
+                    type: "GET",
+                    dataType: "html",
+                    success: function(detail) {
+						console.log("==================================================dsfksdjfk");
+						console.log(detail);
+                        $("#scheduleModal .modal-body").html(detail);
+                        $("#scheduleModal").modal("show");
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX 오류:", status, error);
+                        alert("일정 상세 정보를 불러오는 데 실패했습니다.");
+                    }
+                });
+            }
+        },
+
+
+        // 드래그해서 이벤트 추가 기능 (나중에 할 예정)
+        eventReceive: function(info) {
+            console.log("드롭된 이벤트:", info.event);
+        },
+		
+
+        // 📌 일정 추가 모달 열기
+        dateClick: function(info) {
+            $.ajax({
+                url: `${contextPath}/${companyNo}/schedule/form`,  // JSP 폼을 가져오는 URL
+                type: "GET",
+                dataType: "html",
+                success: function(resp) {
+					
+                    $("#scheduleModal .modal-body").empty().html(resp);
+					
+                    $("#scheduleModal").modal("show");
+					
+					// 일정 시작일 필드 자동 설정
+					$("#scheduleModal").on("shown.bs.modal", function() {
+					    $("#schdlBgngYmd").val(info.dateStr); // 선택한 날짜 자동 입력
+					});
+	
+					//폼 제출 이벤트
+					$("#scheduleModal").on("submit", "#scheduleForm", function(event) {
+						event.preventDefault(); // 기본 폼 제출 방지
+						saveSchedule();
+					});
+					
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX 오류:", status, error);
+                    alert("일정 등록 폼을 불러오는 데 실패했습니다.");
+                }
+            });
+        }
+		
+    });
+
+    calendar.render();
+
+
+
+	// 일정 저장 함수 (POST 요청)
+	function saveSchedule() {
+	    let formData = $("#scheduleForm").serialize(); // 폼 데이터 직렬화
+	
+	    $.ajax({
+	        url: `${contextPath}/${companyNo}/schedule/createSchedule.ajax`, // 일정 저장 API URL
+	        type: "POST",
+	        data: formData,
+	        dataType: "json",
+	        success: function(resp) {
+				console.log(resp.cnt);
+				
+				if (resp.cnt == 1) {
+				    alert("일정이 성공적으로 저장되었습니다!");
+				    $("#scheduleModal").modal("hide"); // 모달 닫기
+				    location.reload(); // 캘린더 새로고침
+				} else {
+				    alert("일정 저장에 실패했습니다. 다시 시도해주세요.");
+				}
+				
+	        },
+	        error: function(xhr, status, error) {
+	            console.error("AJAX 오류:", status, error);
+	            alert("일정 저장 중 오류가 발생했습니다.");
+	        }
+	    });
+	}
+
+	// 수정버튼
+	function handleEditSchedule() {
+	    // 모든 라디오 버튼 가져오기
+	    let radioButtons = document.querySelectorAll('input[name="schdlEdit"]');
+	
+	    // 하나라도 체크되었는지 확인
+	    let isChecked = Array.from(radioButtons).some(radio => radio.checked);
+	
+	    if (!isChecked) {
+	        // 라디오 버튼이 체크되지 않았다면 경고창 표시 후 함수 종료
+	        Swal.fire({
+	            icon: "warning",
+	            title: "체크 필요!",
+	            text: "먼저 옵션을 선택하세요!",
+	            confirmButtonText: "확인",
+	            confirmButtonColor: "#ff9800",
+	        });
+	        return;
+	    }
+	
+	    // 라디오 버튼이 체크된 경우 정상 실행
+	    Swal.fire({
+	        icon: "success",
+	        title: "성공!",
+	        text: "수정이 완료되었습니다!",
+	        confirmButtonText: "확인",
+	        confirmButtonColor: "#28a745",
+	    });
+	}
+	
+	//삭제
+	function handleDeleteSchedule() {
+	    let selectedRadio = document.querySelector('input[name="schdlEdit"]:checked');
+
+	    if (!selectedRadio) {
+	        Swal.fire({
+	            icon: "warning",
+	            title: "체크 필요!",
+	            text: "삭제할 일정을 선택하세요!",
+	            confirmButtonText: "확인",
+	            confirmButtonColor: "#ff9800",
+	        });
+	        return;
+	    }
+
+	    let schdlNo = selectedRadio.value; // 선택된 일정 번호
+
+	    Swal.fire({
+	        title: "삭제 확인",
+	        text: "정말로 삭제하시겠습니까?",
+	        icon: "warning",
+	        showCancelButton: true,
+	        confirmButtonColor: "#d33",
+	        cancelButtonColor: "#3085d6",
+	        confirmButtonText: "삭제",
+	        cancelButtonText: "취소"
+	    }).then((result) => {
+	        if (result.isConfirmed) {
+	            $.ajax({
+	                url: `${contextPath}/${companyNo}/schedule/deleteSchedule.ajax/${schdlNo}`,
+	                type: "DELETE",
+	                success: function(resp) {
+	                    if (resp.cnt == 1) {
+	                        Swal.fire("삭제 완료!", "일정이 삭제되었습니다.", "success").then(() => {
+	                            location.reload(); // 페이지 새로고침
+	                        });
+	                    } else {
+	                        Swal.fire("삭제 실패!", "다시 시도해 주세요.", "error");
+	                    }
+	                },
+	                error: function(xhr, status, error) {
+	                    console.error("AJAX 오류:", status, error);
+	                    Swal.fire("오류 발생!", "일정 삭제 중 문제가 발생했습니다.", "error");
+	                }
+	            });
+	        }
+	    });
+	}
+
+});

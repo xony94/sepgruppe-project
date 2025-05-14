@@ -1,0 +1,87 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일      			수정자           수정내용
+ *  ============   	============== =======================
+ *  2025. 3. 12.     	JYS            최초 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<script src="${pageContext.request.contextPath }/resources/groupware/js/jquery-3.7.1.min.js"></script>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+    <style>
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .department {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .subDepartments {
+            display: none; /* 기본적으로 숨김 */
+        }
+    </style>
+    <h2>조직도 관리</h2>
+   	
+    <ul>
+         <c:forEach var="dept" items="${departments}">
+        <li>
+            <!-- 트리 토글 버튼 -->
+            <span class="toggle-btn" onclick="toggleTree('${dept.deptCd}')">▶</span> 
+            <span class="dept-name">${dept.deptName}</span>
+
+            <!-- 사원 리스트 -->
+            <ul id="employees-${dept.deptCd}" class="employee-list" style="display: none;">
+                <c:forEach var="emp" items="${dept.employee}">
+                    <li>${emp.empNm} - ${emp.positionName}</li>
+                </c:forEach>
+            </ul>
+
+            <!-- 하위 부서 (재귀적 구조) -->
+            <c:if test="${not empty dept.subDepartments}">
+                <ul id="subDept-${dept.deptCd}" class="sub-department" style="display: none;">
+                    <c:forEach var="subDept" items="${dept.subDepartments}">
+                        <li>
+                            <span class="toggle-btn" onclick="toggleTree('${subDept.deptCd}')">▶</span> 
+                            <span class="dept-name">${subDept.deptName}</span>
+
+                            <!-- 하위 부서 소속 사원 리스트 -->
+                            <ul id="employees-${subDept.deptCd}" class="employee-list" style="display: none;">
+                                <c:forEach var="emp" items="${subDept.employee}">
+                                    <li>${emp.empNm} - ${emp.positionName}</li>
+                                </c:forEach>
+                            </ul>
+
+                            <!-- 하위 부서 또 출력 (재귀) -->
+                            <c:if test="${not empty subDept.subDepartments}">
+                                <ul id="subDept-${subDept.deptCd}" class="sub-department" style="display: none;">
+                                    <c:forEach var="subSubDept" items="${subDept.subDepartments}">
+                                        <li>
+                                            <span class="toggle-btn" onclick="toggleTree('${subSubDept.deptCd}')">▶</span> 
+                                            <span class="dept-name">${subSubDept.deptName}</span>
+                                            
+                                            <!-- 사원 리스트 -->
+                                            <ul id="employees-${subSubDept.deptCd}" class="employee-list" style="display: none;">
+                                                <c:forEach var="emp" items="${subSubDept.employee}">
+                                                    <li>${emp.empNm} - ${emp.positionName}</li>
+                                                </c:forEach>
+                                            </ul>
+                                        </li>
+                                    </c:forEach>
+                                </ul>
+                            </c:if>
+                        </li>
+                    </c:forEach>
+                </ul>
+            </c:if>
+        </li>
+    </c:forEach>
+    </ul>
+    <script src="${pageContext.request.contextPath }/resources/groupware/js/admin/organizationList.js"></script>
+    <script>
+    	var contextPath = "${pageContext.request.contextPath}";
+    	var companyNo = "${companyNo}";
+    </script>

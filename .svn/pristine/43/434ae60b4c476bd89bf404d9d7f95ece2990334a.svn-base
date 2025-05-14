@@ -1,0 +1,106 @@
+@charset "UTF-8";
+
+/* 부모 wrapper가 flex로 배치되도록 설정 */
+.community-wrapper {
+    display: flex;
+    height: 100%;
+    justify-content: space-between; /* 왼쪽과 오른쪽 영역 사이에 간격을 두기 */
+    align-items: flex-start;  /* 세로로 맞추기 (위로 정렬) */
+}
+
+/* 왼쪽 영역 (community-left) */
+.community-left {
+    width: 250px;
+    min-height: 100vh; /* 최소 높이를 화면 크기만큼 설정 */
+    padding: 20px;
+    border-right: 1px solid #ddd;
+    overflow-y: auto; /* 세로 스크롤 */
+}
+
+/* 오른쪽 영역 (community-right) */
+.community-right {
+    flex-grow: 1; /* 오른쪽 영역은 나머지 공간을 채움 */
+    padding: 20px;
+    min-height: 100vh; /* 최소 높이를 화면 크기만큼 설정 */
+    display: flex;
+    flex-direction: column; /* 세로로 정렬 */
+    background-color: #fff;
+    overflow-y: auto; /* 세로 스크롤 */
+}
+
+/* 커뮤니티 아이템 스타일 */
+.community-item {
+    font-weight: 700; /* 더 굵은 글씨체 */
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.community-item:hover {
+    background-color: #e8f0ff; /* 호버 시 배경색 변경 */
+}
+
+/* 버튼 스타일 */
+.btn-create {
+    margin-bottom: 20px;
+}
+.community-left .d-flex {
+    margin-bottom: 20px; /* "가입 커뮤니티"와 아이콘 사이 간격 추가 */
+}
+.community-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* 탭 관련 스타일 */
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #2c384e;
+    transition: border-color 0.3s ease-in-out;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom: 2px solid #007bff;
+    color: #007bff;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom: 2px solid #0056b3;
+}
+
+/* 탭 콘텐츠 */
+.tab-pane {
+    display: none;
+        margin-top: 0;  /* 탭 콘텐츠의 상단 여백을 0으로 설정 */
+    padding-top: 0; /* 탭 콘텐츠의 상단 패딩을 0으로 설정 */
+    padding-bottom: 0; /* 필요에 따라 하단 패딩도 0으로 설정 */
+}
+
+.tab-pane.show {
+    display: block;
+}
+
+/* 커뮤니티 목록 숨기기 */
+.community-list {
+    display: none;
+    list-style-type: none;
+    padding-left: 0;
+}
+
+/* 가입 커뮤니티 항목 스타일 */
+ul.list-unstyled {
+    padding: 0;
+}
+
+li.d-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+i.toggle-communities {
+    cursor: pointer;
+    font-size: 1.2rem;
+}

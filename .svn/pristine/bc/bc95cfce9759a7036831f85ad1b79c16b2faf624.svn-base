@@ -1,0 +1,65 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>    
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="security" %> 
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %> 
+<link rel="stylesheet" href="${pageContext.request.contextPath}/resources/groupware/css/indexGW.css" />
+<security:authentication property="principal.realUser" var="realUser"/> <!-- Provider 시큐리티 정보 -->
+<title>${realUser.companyNo } - 메인페이지</title>
+
+<!-- 위젯 전체 레이아웃 -->
+<div id="widgetContainer">
+  <div id="leftColumn" class="column">
+    <div class="widget-box" data-widget-id="dclz" id="dclz-widget">
+      <c:import url="/${companyNo}/dclz/main-panel" />
+    </div>
+    <div class="widget-box schedule" data-widget-id="schedule" id="schedule-widget">
+      <c:import url="/${companyNo}/widget/schedule" />
+    </div>
+  </div>
+  <div id="rightColumn" class="column">
+    <div class="widget-box" data-widget-id="notice" id="notice-widget">
+      <div class="card-body">
+        <h4 class="card-title">공지사항</h4>
+        <ul class="list-group list-group-flush">
+          <c:forEach var="notice" items="${noticeList}">
+            <li class="list-group-item">
+              <a href="<c:url value='/${companyNo}/notice/${notice.noticeNo}'/>">${notice.noticeTitle}</a><br/>
+              <small class="text-muted">${notice.empNm} · ${fn:substring(notice.noticeCreatedAt, 0, 10)}</small>
+            </li>
+          </c:forEach>
+        </ul>
+        <a href="<c:url value='/${companyNo}/notice'/>" class="btn btn-sm btn-outline-primary mt-2">전체보기</a>
+      </div>
+    </div>
+    
+    <!-- 위젯 박스 추가  -->
+	<div class="widget-box" data-widget-id="approval-waiting" id="appr-widget">
+	  <c:import url="/${companyNo}/widget/approval-waiting"/>
+	</div>
+  </div>
+</div>
+
+
+<script>
+	const contextPath = "${pageContext.request.contextPath}";
+	const companyNo = "${companyNo}";
+	const empId = "${realUser.empId}";
+	
+	new Sortable(document.getElementById('leftColumn'), {
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  draggable: '.widget-box'
+		});
+
+		new Sortable(document.getElementById('rightColumn'), {
+		  animation: 150,
+		  ghostClass: 'sortable-ghost',
+		  draggable: '.widget-box'
+		});
+</script>
+
+<script src="${pageContext.request.contextPath }/resources/groupware/js/indexGW.js"></script>
+<script src="${pageContext.request.contextPath }/resources/groupware/js/alarm/alarm.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.15/index.global.min.js"></script>

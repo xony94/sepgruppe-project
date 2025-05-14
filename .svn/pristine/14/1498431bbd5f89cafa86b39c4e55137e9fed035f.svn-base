@@ -1,0 +1,12 @@
+@charset "UTF-8";
+
+#isDraftListBtn {
+    margin-top: 15px;
+}
+
+.dropdown-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}

@@ -1,0 +1,89 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	KKM            최초 생성
+ *
+ * </pre>
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    // 유효한 태스크만 필터링
+    const validTasks = gantTaskList.filter(task => {
+        const startDate = new Date(task.start_date);
+        const endDate = new Date(task.due_date);
+
+        // 날짜 유효성 검사
+        if (!task.start_date || !task.due_date || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn(`Invalid task date detected. Task ID: ${task.id}, Start: ${task.start_date}, End: ${task.due_date}`);
+            return false;
+        }
+
+        // 시작 날짜가 종료 날짜보다 빠른지 확인
+        if (startDate > endDate) {
+            console.warn(`Task start date is after end date. Task ID: ${task.id}, Start: ${task.start_date}, End: ${task.due_date}`);
+            return false;
+        }
+
+        return true;
+    });
+
+    console.log("Valid Gantt Tasks:", validTasks);
+
+    // DHTMLX Gantt 초기화
+    gantt.init("gantt");
+
+    // 태스크 데이터 로드
+    gantt.parse({
+        data: validTasks,
+        links: [] // 링크 데이터 (없으면 빈 배열)
+    });
+
+    // 태스크 클릭 이벤트 추가
+    gantt.attachEvent("onTaskClick", function (id) {
+        const task = gantt.getTask(id);
+        console.log("Task clicked:", task);
+        return true; // 기본 동작 유지
+    });
+
+    // 태스크 날짜 변경 이벤트 추가
+    gantt.attachEvent("onAfterTaskUpdate", function (id, item) {
+        console.log(`Task updated: ${item.text}, Start: ${item.start_date}, End: ${item.due_date}`);
+    });
+	
+	
+	
+    // 태스크 완료 퍼센트 변경 이벤트 추가
+    gantt.attachEvent("onTaskProgressChange", function (id, progress) {
+        const task = gantt.getTask(id);
+        console.log(`Progress updated: ${task.text}, Progress: ${progress * 100}%`);
+    });
+
+    // 뷰 모드 변경 (일/주/월)
+    gantt.templates.scale_cell_class = function (date) {
+        // 뷰 모드 변경 시 콘솔 출력
+        console.log(`View mode changed to: ${gantt.config.scale_unit}`);
+    };
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

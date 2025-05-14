@@ -1,0 +1,146 @@
+document.addEventListener('DOMContentLoaded', function() {
+    /* myPage 프로필 사진 삭제 클릭 시 목록에서 제외 기능 */
+    const $fileInput = document.querySelector('.fileInput');
+    const $profileImage = document.querySelector('.profileImage');
+    const $deleteButton = document.querySelector('.deleteBtn');
+
+    /* Modal 설정 */
+    const staticBackdrop = document.getElementById('staticBackdrop');
+
+    /* myPage 프로필 사진 삭제 클릭 시 목록에서 제외 기능 */
+    $deleteButton.addEventListener('click', () => {
+        $profileImage.src = '';
+        $fileInput.value = '';
+    });
+
+    // 모달이 열릴 때 입력 필드 초기화
+    staticBackdrop.addEventListener('shown.bs.modal', event => {
+        $('#confirmPw').val(''); // 입력 필드 초기화
+        $('#pwErrorCk').text(''); // 에러 메시지 초기화
+    });
+
+    // 모달이 닫힐 때 입력 필드 초기화
+    staticBackdrop.addEventListener('hidden.bs.modal', event => {
+        $('#confirmPw').val(''); // 입력 필드 초기화
+        $('#pwErrorCk').text(''); // 에러 메시지 초기화
+    });
+
+    /* myPage 값 검증 */
+    $(document).ready(function() {
+        /* myPage 정보수정 비밀번호 값 검증 */
+        $("#button").click(function(event) {
+            event.preventDefault();
+
+            const empPw = $("#empPw").val();
+            const pwErrorCk = $("#empPwCk").val();
+            const pwErrorSpan = $("#pwErrorCk");
+
+            if (empPw !== pwErrorCk) {
+                pwErrorSpan.text("비밀번호가 일치하지 않습니다.");
+            } else {
+                pwErrorSpan.text("");
+            }
+
+            /* 이메일 형식 검증 */
+            const empEmail = $("input[name='empEmail']").val();
+            const emailErrorSpan = $("#emailError");
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(empEmail)) {
+                emailErrorSpan.text("유효한 이메일 형식이 아닙니다.");
+            } else {
+                emailErrorSpan.text("");
+            }
+
+            /* 휴대폰 번호 형식 검증 */
+            const empPhone = $("input[name='empPhone']").val();
+            const phoneErrorSpan = $("#phoneError");
+            const phonePattern = /^\d{3}-\d{4}-\d{4}$/;
+
+            if (!phonePattern.test(empPhone)) {
+                phoneErrorSpan.text("유효한 휴대폰 번호 형식이 아닙니다. (000-0000-0000)");
+            } else {
+                phoneErrorSpan.text("");
+            }
+
+            /* 우편번호 필수값 검증 */
+            const empZip = $("input[name='empZip']").val();
+            const zipErrorSpan = $("#zipError");
+
+            if (empZip == "") {
+                zipErrorSpan.text("우편번호는 필수 입력값입니다.");
+            } else {
+                zipErrorSpan.text("");
+            }
+
+            // 모든 검증이 통과하면 폼 제출
+            if (pwErrorSpan.text() == "" && emailErrorSpan.text() == "" && phoneErrorSpan.text() == "" && zipErrorSpan.text() == "") {
+                $("form[name='frm'] input").each(function() {
+                    if ($(this).val() == "") {
+                        $(this).prop('disabled', true); // 비어 있는 필드를 비활성화
+                    }
+                });
+
+                $("form[name='frm']").submit(); // 폼 제출
+            }
+        });
+
+        /* myPage 정보수정 파일형식 검증 */
+        $("#isFile").change(function() {
+            const fileInput = $(this);
+            const fileErrorSpan = $("#fileError");
+            const filePath = fileInput.val();
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
+
+            if (!allowedExtensions.exec(filePath)) {
+                fileErrorSpan.text("유효한 이미지 파일 형식이 아닙니다. (jpg, jpeg, png만 허용됨)");
+                fileInput.val('');
+            } else {
+                fileErrorSpan.text("");
+            }
+        });
+    });
+
+    /* DB 이미지 삭제 */
+	function deleteImage(empId) {
+		    $.ajax({
+		        url: '/sep/a001/employee/deleteImg',
+		        type: 'POST',
+		        data: { empId: empId },
+		        success: function(resp) {
+		            $('.profileImage').attr('src', '');
+		        }
+		    });
+		}
+
+    /* 마이페이지 정보수정 진입 시 비밀번호 검증 */
+    $(document).ready(function() {
+        // 비밀번호 확인 버튼 클릭 시
+        $('#verifyBtn').click(function() {
+            const password = $('#confirmPw').val();
+
+            // 비밀번호 인증 요청
+            $.ajax({
+                url: '/sep/a001/employee/mypage/verifyPassword', // 비밀번호 검증 URL
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ empPw: password }),
+                success: function() {
+                    $('#profile2-edit').addClass('show active');
+                    $('#profile2-overview').removeClass('show active');
+                    $('#staticBackdrop').modal('hide');
+                },
+                error: function(jqXHR) {
+                    if (jqXHR.status === 401) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Oops...",
+                            text: "비밀번호가 올바르지 않습니다!",
+                            footer: '<a href="#">왜 이런 문제가 발생하나요?</a>'
+                        });
+                    }
+                }
+            });
+        });
+    });
+});

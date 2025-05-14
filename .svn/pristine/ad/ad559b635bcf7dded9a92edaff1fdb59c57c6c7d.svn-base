@@ -1,0 +1,48 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 4. 7.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+const autoLineName = document.querySelector("#autoLineName");
+const docFrmNo = document.querySelector("#docFrmNo");
+const autoLineSetTbody = document.querySelector("#autoLineSetTbody");
+
+document.addEventListener("DOMContentLoaded",()=>{
+	const aprvlLine = window.aprvlLine || [];
+	
+	if(aprvlLine.length>0){
+		autoLineName.value = aprvlLine[0].aprvlLineName;
+		docFrmNo.value = aprvlLine[0].docFrmNo;
+		aprvlLine.forEach(row=>{
+			const tr = document.createElement("tr");
+			
+			tr.innerHTML = `
+			<td id="aprvlTurn">${aprvlTurn}</td>
+            <td>
+                <select id="commCodeNo">
+                    <option value="none">==타입==</option>
+                    ${apprLineTypeOptions}
+                </select>
+            </td>
+			<td>
+                <select id="deptCd">
+                    <option value="none">==부서==</option>
+                    ${departmentOptions}
+                </select>
+            </td>
+            <td>
+                <select id="positionCd">
+                    <option value="none">==직위==</option>
+                    ${positionOptions}
+                </select>
+            </td>
+            <td><i class="fa fa-trash delete-icon" style="cursor:pointer;"></i></td>				
+			`			
+		});
+	}
+});

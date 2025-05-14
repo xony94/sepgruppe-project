@@ -1,0 +1,61 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 4. 8.     	SJH            최초 생성
+ *
+ * </pre>
+ */
+
+  function fillHourSelectBox(selectId) {
+    const select = document.getElementById(selectId);
+    for (let hour = 9; hour <= 21; hour++) {
+      const value = `${hour.toString().padStart(2, '0')}:00`;
+      const label = (hour < 12 ? '오전 ' : '오후 ') + (hour % 12 === 0 ? 12 : hour % 12) + '시';
+      const option = new Option(label, value);
+      select.appendChild(option);
+    }
+  }
+
+  $(document).ready(function () {
+    fillHourSelectBox("reservationStartTime");
+    fillHourSelectBox("reservationEndTime");
+
+    // 기본 선택값 설정 (기존 값 있다면)
+    const startTimeValue = "${reservationStartTimeFormatted}"; // 예: "09:00"
+    const endTimeValue = "${reservationEndTimeFormatted}";
+    if (startTimeValue) $("#reservationStartTime").val(startTimeValue);
+    if (endTimeValue) $("#reservationEndTime").val(endTimeValue);
+  });
+  
+  // 예약 시간 유효성 체크
+  document.querySelector("form").addEventListener("submit", function (e) {
+      const start = document.getElementById("reservationStartTime").value;
+      const end = document.getElementById("reservationEndTime").value;
+
+      if (start >= end) {
+          alert("⚠ 시작 시간은 종료 시간보다 빨라야 합니다.");
+          e.preventDefault();
+      }
+  });
+  
+  // 기존 예약 정보 수정 시 뜨기
+  $(document).ready(function () {
+      $('#editReservationModal').on('show.bs.modal', function (event) {
+          const button = $(event.relatedTarget); // 클릭한 버튼
+          const modal = $(this);
+
+          const date = button.data('date');
+          const start = button.data('start');
+          const end = button.data('end');
+
+          // 콘솔 확인용
+          console.log("날짜:", date, "시작:", start, "종료:", end);
+
+          modal.find('input[name="reservationDate"]').val(date);
+          modal.find('input[name="reservationStartTime"]').val(start);
+          modal.find('input[name="reservationEndTime"]').val(end);
+      });
+  });

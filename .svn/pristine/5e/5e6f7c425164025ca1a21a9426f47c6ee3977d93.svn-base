@@ -1,0 +1,90 @@
+/* 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 19.     	KKM            최초 생성
+ *
+ * </pre>
+ */
+
+@charset "UTF-8";
+
+/* 기본 스타일 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+/* 날짜 내비게이션 스타일 */
+.date-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.date-navigation button {
+    margin: 0 10px;
+    font-size: 20px;
+}
+
+/* 예약 현황 스타일 */
+.reservation-status {
+    margin-top: 30px;
+}
+
+/* 예약 테이블 스타일 */
+.reservation-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reservation-table th, .reservation-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    position: relative; /* 슬롯 스타일을 위한 상대 위치 설정 */
+}
+
+.reservation-table th {
+    background-color: #f2f2f2;
+}
+
+/* 예약 슬롯 스타일 */
+.time-slot {
+    background-color: #007bff;
+    color: white;
+    position: absolute; /* 슬롯을 정확히 배치하기 위한 절대 위치 설정 */
+    height: 100%; /* 슬롯 높이를 셀에 맞춤 */
+}
+
+/* 내 예약 현황 스타일 */
+.my-reservations {
+    margin-top: 40px;
+}
+
+.my-reservations table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.my-reservations th, .my-reservations td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.my-reservations th {
+    background-color: #f2f2f2;
+}
+
+/* 예약 내용을 더 잘 보여주기 위한 스타일 */
+.reserved-content {
+    background-color: #0056b3; /* 더 어두운 배경색 */
+    color: white;
+    padding: 5px;
+    border-radius: 4px;
+    display: inline-block; /* 인라인 블록으로 설정 */
+}

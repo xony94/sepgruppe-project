@@ -1,0 +1,244 @@
+document.addEventListener('DOMContentLoaded', function() {
+
+    // 커뮤니티 토글 이벤트
+    function toggleCommunityList() {
+        const toggleIcon = document.querySelector('#toggle-communities');
+        const communityList = document.querySelector('#community-list');
+
+        toggleIcon.addEventListener('click', function() {
+            if (communityList.style.display === 'none' || communityList.style.display === '') {
+                communityList.style.display = 'block';
+                toggleIcon.classList.remove("bi-chevron-down");
+                toggleIcon.classList.add("bi-chevron-up");
+            } else {
+                communityList.style.display = 'none';
+                toggleIcon.classList.remove("bi-chevron-up");
+                toggleIcon.classList.add("bi-chevron-down");
+            }
+        });
+    }
+
+	// 좌측 가입 커뮤니티 토글 이벤트
+    toggleCommunityList();
+
+    // 가입커뮤니티, 전체커뮤니티 탭 클릭 시 콘텐츠 전환
+    const tabs = document.querySelectorAll('.nav-link');
+    const tabContents = document.querySelectorAll('.tab-pane');
+
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            const targetId = event.target.getAttribute('data-bs-target');
+            const targetContent = document.querySelector(`#${targetId}`);
+
+            tabContents.forEach(function(content) {
+                content.classList.remove('show', 'active');
+            });
+            targetContent.classList.add('show', 'active');
+
+            tabs.forEach(function(t) {
+                t.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        });
+    });
+
+    // 좌측 가입커뮤니티 목록 클릭 시 좌측 내용 동적으로 변경
+    const communityItems = document.querySelectorAll('.community-item');
+    const communityLeft = document.querySelector('#community-left');
+
+    communityItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            const communityNo = this.getAttribute('data-community-no');
+            loadCommunityDetails(communityNo); // 아래 이벤트 호출
+        });
+    });
+
+    // 좌측 가입커뮤니티 목록 클릭 시 좌측 내용 동적으로 변경 (AJAX를 통해 서버에서 데이터 가져오기)
+    function loadCommunityDetails(communityNo) {
+        communityLeft.innerHTML = '';
+
+        const communityContent = `
+			<div class="community-header">
+			    <i class="bi bi-door-open"></i>
+			    <span id="communityName"></span>
+			</div>
+
+            <a class="btn btn-secondary btn-sm w-100" id="addBoard">
+                <i class="bi bi-plus-circle"></i> 게시판 추가
+            </a>
+
+			<ul class="list-unstyled">
+			    <li class="d-flex justify-content-between align-items-center">
+			        <h6 class="mb-0" style="font-weight: 500;">게시판목록</h6>
+			        <i class="bi bi-chevron-down toggle-communities" id="toggle-communities"></i>
+			    </li>
+			    <ul class="community-list" id="community-list" style="display: block; list-style-type: none; padding-left: 0;"></ul>
+			</ul>
+
+			<ul class="list-unstyled" style="margin-top: 30px;">
+			    <li class="d-flex justify-content-between align-items-center">
+			        <h6 class="mb-0" style="font-weight: 500;">가입 멤버</h6>
+			    </li>
+			    <ul class="member-list list-unstyled" id="member-list" style="display: block; list-style-type: none; padding-left: 0;"></ul>
+			</ul>
+
+
+
+
+
+
+
+
+
+            <button class="btn btn-outline-primary w-100 mb-2" id="invite-btn">초대하기</button>
+            <button class="btn btn-outline-danger w-100" id="leave-btn">탈퇴하기</button>
+        `;
+
+        communityLeft.innerHTML = communityContent;
+
+        // 가입 멤버 하단에 가입된 멤버 목록 출력
+        $.ajax({
+            url: '/sep/${companyNo}/community/getMembers',
+            data: { communityNo: communityNo },
+            success: function(data) {
+                const memberList = document.querySelector('#member-list');
+                memberList.innerHTML = '';
+
+                // 등록된 게시판 정보 가져오기
+                data.board.forEach(function(boards) {
+                    const communityName = document.querySelector('#communityName');
+                    communityName.innerHTML = `${boards.communityNm}`;
+                    boards.board.forEach(function(boardList){
+                        const boardDiv = document.querySelector('#community-list');
+                        boardDiv.innerHTML += `<li class="community-item">${boardList.boardNm}</li>`;
+                    });
+                });
+
+                // 가입된 멤버 정보 가져오기
+				const ownerList = [];
+				const memberListArray = [];
+
+                data.members.forEach(function(member) {
+                    member.communityMember.forEach(function(communityMemberItem) {
+                        console.log('communityMemberItem.memberRole:', communityMemberItem.memberRole);
+
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('member-item');
+						listItem.style.display = 'flex';
+						listItem.style.marginTop = '10px';
+
+
+						const icon = document.createElement('i');
+						icon.classList.add('fas');
+						if(communityMemberItem.memberRole === '방 주인'){
+							icon.classList.add('fa-crown');
+							ownerList.push(listItem);
+						}else{
+							icon.classList.add('fa-user');
+							icon.style.setProperty('marginRight', '12px', 'important');
+							icon.style.marginLeft = '3px';
+							icon.style.marginRight = '12px';
+
+
+
+							memberListArray.push(listItem);
+
+						}
+						icon.style.fontSize = '1.5rem';
+						icon.style.marginRight = '10px';
+
+						const nameText = document.createTextNode(communityMemberItem.employee.empNm);
+						listItem.appendChild(icon);
+						listItem.appendChild(nameText);
+
+						if (communityMemberItem.memberRole === '방 주인') {
+						    ownerList.push(listItem);
+						} else {
+						    memberListArray.push(listItem);
+						}
+                    })
+                });
+				ownerList.forEach(function(item) {
+				    memberList.appendChild(item);
+				});
+
+				memberListArray.forEach(function(item) {
+				    memberList.appendChild(item);
+				});
+				// 좌측 게시판 목록 토글 이벤트
+                toggleCommunityList();
+            }
+        });
+    }
+
+    // 좌측 가입커뮤니티 목록 클릭 시 오른쪽 내용 동적으로 변경 (AJAX를 통해 서버에서 데이터 가져오기)
+    const communityTabs = document.querySelector('#community-tabs');
+    const articlesList = document.querySelector('#recent-articles');
+    const allCommunities = document.querySelector('#all-communities');
+
+    communityItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            const communityNo = this.getAttribute('data-community-no');
+            loadCommunityBoard(communityNo); // 아래 이벤트 호출
+        });
+    });
+
+    function loadCommunityBoard(communityNo) {
+        communityTabs.style.display = 'none';
+        allCommunities.innerHTML = '';
+        articlesList.innerHTML = '';
+        let cnt = 0;
+        const tableHeader = `
+            <div class="table-responsive">
+                <table id="add-row" class="table table-hover display">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all" /></th>
+                            <th>글번호</th>
+                            <th>게시판명</th>
+                            <th>제목</th>
+                            <th>작성자</th>
+                            <th>작성일</th>
+                            <th>조회수</th>
+                            <th>좋아요</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        `;
+        articlesList.innerHTML = tableHeader;
+
+        // 우측에 게시글 목록 출력
+        $.ajax({
+            url: `/sep/${companyNo}/community/getPost`,
+            data: { communityNo: communityNo },
+            success: function(data) {
+                const tableBody = document.querySelector('#tableBody');
+                data.board.forEach(function(boards) {
+                    console.log("boards",boards.employee.empNm)
+                    boards.board.forEach(function(boardItem) {
+                        boardItem.post.forEach(function(postItem) {
+                            const communityContent = `
+                                <tr>
+                                    <td><input type="checkbox"></td>
+                                    <td>${cnt+=1}</td>
+                                    <td>${boardItem.boardNm}</td>
+                                    <td>${postItem.postTitle}</td>
+                                    <td>${boards.employee.empNm}</td>
+                                    <td>${postItem.postCreatedAt}</td>
+                                    <td>${postItem.postViewCount}</td>
+                                    <td>${postItem.postLikeCount}</td>
+                                </tr>
+                            `;
+
+                            tableBody.innerHTML += communityContent;
+                        });
+                    });
+                });
+            }
+        });
+    }
+
+});

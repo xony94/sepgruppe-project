@@ -1,0 +1,38 @@
+package kr.or.ddit.works.organization.service;
+
+import org.apache.ibatis.annotations.Param;
+
+import kr.or.ddit.works.organization.vo.EmployeeVO;
+
+public interface EmployeeService {
+
+	/**
+	 * 마이페이지 정보 수정
+	 * @param companyNo 로그인된 고객사번호
+	 * @return
+	 */
+	public boolean updateEmployee(EmployeeVO member);
+
+	/**
+	 * 회원정보 조회
+	 * @param empId
+	 * @return
+	 */
+	public EmployeeVO selectEmployee(String empId);
+
+
+	/**
+	 * 마이페이지 이미지 삭제
+	 * @param empId
+	 * @return
+	 */
+	public boolean deleteImage(String empId);
+
+	/**
+	 * 마이페이지 진입 시 패스워드 인증
+	 * @param member
+	 * @return
+	 */
+	public boolean authenticateMember(String empId, String empPw);
+
+}

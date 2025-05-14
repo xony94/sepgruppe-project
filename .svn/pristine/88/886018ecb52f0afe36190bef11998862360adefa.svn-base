@@ -1,0 +1,76 @@
+package kr.or.ddit.works.chat.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.Headers;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SubscribeMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import kr.or.ddit.works.chat.service.ChatService;
+import kr.or.ddit.works.chat.vo.ChatRoomUserVO;
+import kr.or.ddit.works.chat.vo.MessageVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/chat")
+public class MessageController {
+
+	@Autowired
+	private ChatService chatService;
+	
+	private SimpMessagingTemplate messagingTemplate;
+
+	@MessageMapping("/{roomId}")
+    @SendTo("/topic/{roomId}")
+    public MessageVO broadcastMessage(@DestinationVariable String roomId, MessageVO message) {
+        log.info("Received message: {}", message);
+//        message.setRoomId(roomId);
+        chatService.insertMessage(message);
+        
+        return message;
+    }
+	
+	@SubscribeMapping("/{roomId}")
+	public String subscribeHandler(@Headers Map<String, Object> headers, Authentication authentication) {
+		String empId = authentication.getName();
+		log.info("headers : {}", headers);
+		String sub_id = empId;
+		return sub_id;
+	}
+	
+	@GetMapping("{roomId}")
+	public String selectChatRoomDetail(
+		@PathVariable("roomId") String roomId
+		, Model model
+	) {
+		
+		List<MessageVO> messageList = chatService.findAllMessageByRoomId(roomId);
+		
+		model.addAttribute("roomId", roomId);
+		model.addAttribute("messageList", messageList);
+		return "groupware/chat/chatHome";
+	}
+	
+	@GetMapping("list")
+	public String selectListAllChatRoom(
+		Model model, Authentication authentication
+	) {
+		String empId = authentication.getName();
+		List<ChatRoomUserVO> rooms = chatService.selectListAllChatRoom(empId);
+		model.addAttribute("rooms", rooms);
+		return "groupware/chat/chatList";
+	}
+}

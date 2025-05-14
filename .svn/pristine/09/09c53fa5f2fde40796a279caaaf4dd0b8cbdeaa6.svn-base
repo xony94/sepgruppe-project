@@ -1,0 +1,50 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OneSignal Web Push Test</title>
+    <!-- 아래 스크립트 URL과 init 코드 등은 OneSignal 대시보드에서 복사한 내용으로 교체하세요. -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+	<script>
+	  window.OneSignalDeferred = window.OneSignalDeferred || [];
+	  OneSignalDeferred.push(async function(OneSignal) {
+	    await OneSignal.init({
+	      appId: "4313ee1a-1f37-4485-8164-0745af496050",
+	      serviceWorkerPath: "sep/OneSignalSDKWorker.js",
+	      serviceWorkerUpdaterPath: "sep/OneSignalSDKUpdaterWorker.js",
+	      allowLocalhostAsSecureOrigin: true
+	    });
+	  });
+	</script>
+</head>
+<body>
+<h1>OneSignal Web Push Test</h1>
+
+<button id="subscribeBtn">알림 권한 요청</button>
+<button id="getDeviceIdBtn">Device ID 조회</button>
+
+<script>
+  // 알림 권한 요청
+  document.getElementById("subscribeBtn").addEventListener("click", function() {
+    OneSignal.push(async () => {
+      try {
+        const permission = await OneSignal.Notifications.requestPermission();
+        alert("알림 권한 상태: " + permission);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+
+  // Device ID 조회
+  document.getElementById("getDeviceIdBtn").addEventListener("click", function() {
+    OneSignal.push(async () => {
+      const deviceId = await OneSignal.getDeviceId();
+      alert("Device ID: " + deviceId);
+    });
+  });
+</script>
+
+</body>
+</html>

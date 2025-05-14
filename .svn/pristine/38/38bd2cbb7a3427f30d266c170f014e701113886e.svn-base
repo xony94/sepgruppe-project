@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.works.mybatis.mappers.MailMapper">
+
+<select id="selectMailList" resultType="MailReceptionVO">
+	SELECT
+		MAIL_NO,
+		MAIL_ID,
+		MAIL_SENDER,
+		MAIL_RECEIVER,
+		MAIL_SUBJECT,
+		MAIL_CONTENT,
+		MAIL_DATE,
+		MAIL_READ_YN
+	FROM MAIL
+</select>	
+
+<update id="favorite">
+    UPDATE MAIL
+    SET favorite = #{favorite}
+    WHERE mail_id = #{mailId}
+</update>
+
+
+
+</mapper>

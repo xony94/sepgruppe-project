@@ -1,0 +1,86 @@
+package kr.or.ddit.works.organization.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import kr.or.ddit.works.organization.service.OrganizationService;
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+
+/**
+ * 조직도 관리 (organization) 컨트롤러
+ * 
+ * @author JYS
+ * @since 2025. 3. 12.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 12.     	JYS	          최초 생성
+ *
+ * </pre>
+ */
+@Controller
+@RequestMapping("/{companyNo}/organization/admin")
+public class OrganizationAdminController {
+	
+	@Autowired
+	private OrganizationService service;
+
+    /** 조직도 전체 목록 조회 */
+    @GetMapping("organizationList")
+    public String selectListAllOrganization(@PathVariable("companyNo") String companyNo, Model model) {
+    	List<DepartmentVO> departments = service.getAllDepartments(companyNo);
+    	model.addAttribute("departments", departments);
+    	model.addAttribute("companyNo", companyNo);
+        return "gw:admin/organization/organizationList";
+    }
+    // 특정 부서 정보 가져오기
+    @GetMapping("/department/{deptCd}")
+    public ResponseEntity<DepartmentVO> getDepartment(
+    		@PathVariable("deptCd") String deptCd
+    		, @PathVariable("companyNo") String companyNo
+    	) {
+        DepartmentVO department = service.getDepartment(deptCd, companyNo);
+        return ResponseEntity.ok(department);
+    }
+//	@PostMapping("/department/add")
+//	public ResponseEntity<String> addDepartment(@RequestBody DepartmentVO department,
+//			@PathVariable("companyNo") String companyNo) {
+//		// 로그인한 관리자의 companyNo 자동 입력
+//		department.setCompanyNo(companyNo);
+//
+//		// 부서 추가 후 결과 확인
+//		int result = service.addDepartment(department);
+//
+//		if (result > 0) {
+//			return ResponseEntity.ok("부서 추가 완료");
+//		} else {
+//			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("부서 추가 실패");
+//		}
+//	}
+
+    /** 조직도 내 사원 상세 조회 */
+    @GetMapping("/{empId}/detail")
+    public String selectOrganizationEmp(@PathVariable("companyNo") String companyNo, @PathVariable("empId") int empId) {
+        return "gw:organization/organizationDetail";
+    }
+    
+    /**
+     * 부서 내 조직원 조회
+     */
+    
+    
+   
+}

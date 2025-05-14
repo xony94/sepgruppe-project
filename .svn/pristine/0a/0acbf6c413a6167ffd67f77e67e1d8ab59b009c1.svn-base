@@ -1,0 +1,52 @@
+package kr.or.ddit.works.mail.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.or.ddit.works.mail.service.MailService;
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+
+@Controller
+@RequestMapping("/{companyNo}/mail")
+public class MailController {
+
+	@Autowired
+	private MailService mailService;
+	
+	@GetMapping("")
+	public String getMailList(@PathVariable("companyNo") String companyNo
+			, Model model) throws Exception {
+			List<MailReceptionVO> mailList = mailService.getMailList();
+			model.addAttribute("mailList", mailList);
+			model.addAttribute("companyNo", companyNo);
+		return "gw:mail/mailList";
+	}
+	
+	@GetMapping("/mySentMail")
+	public String getSentMailList(@PathVariable("companyNo") String companyNo
+			, Model model) throws Exception {
+			List<MailReceptionVO> sentMailList = mailService.getSentMailList();
+			model.addAttribute("sentMailList", sentMailList);
+			model.addAttribute("companyNo", companyNo);
+		return "gw:mail/sentList";
+	}	
+	
+	@GetMapping("/mailContent/{mailId}")
+	public String getMailContent(@PathVariable("companyNo") String companyNo,
+	                             @PathVariable("mailId") String mailId,
+	                             Model model) throws Exception {
+	    String mailContent = mailService.getMailContent(mailId);
+	    model.addAttribute("mailContent", mailContent);
+	    model.addAttribute("mailId", mailId);
+	    model.addAttribute("companyNo", companyNo);
+	    return "gw:mail/mailContent";
+	}
+
+}

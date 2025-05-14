@@ -1,0 +1,124 @@
+package kr.or.ddit.works.mail.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import kr.or.ddit.works.mail.service.MailService;
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+
+@Controller
+@RequestMapping("/{companyNo}/mail")
+public class MailController {
+
+    @Autowired
+    private MailService mailService;
+
+    @GetMapping("")
+    public String getMailList(@PathVariable("companyNo") String companyNo,
+                               Authentication authentication,
+                               Model model) throws Exception {
+        String empId = authentication.getName();
+        List<MailReceptionVO> mailList = mailService.selectMailList(empId);
+        model.addAttribute("mailList", mailList);
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/mailList";
+    }
+
+    @GetMapping("/mySentMail")
+    public String getSentMailList(@PathVariable("companyNo") String companyNo,
+                                  Authentication authentication,
+                                  Model model) throws Exception {
+        String empId = authentication.getName();
+        List<MailReceptionVO> sentMailList = mailService.getSentMailList(empId);
+        model.addAttribute("sentMailList", sentMailList);
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/sentList";
+    }
+
+    @GetMapping("/mailContent/{mailId}")
+    public String getMailContent(@PathVariable("companyNo") String companyNo,
+                                 @PathVariable("mailId") String mailId,
+                                 Authentication authentication,
+                                 Model model) throws Exception {
+        String empId = authentication.getName();
+        String mailContent = mailService.getMailContent(empId, mailId);
+        model.addAttribute("mailContent", mailContent);
+        model.addAttribute("mailId", mailId);
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/mailContent";
+    }
+
+    @GetMapping("/sentMailContent/{mailId}")
+    public String getSentMailContent(@PathVariable("companyNo") String companyNo,
+                                     @PathVariable("mailId") String mailId,
+                                     Authentication authentication,
+                                     Model model) throws Exception {
+        String empId = authentication.getName();
+        String sentMailContent = mailService.getSentMailContent(empId, mailId);
+        model.addAttribute("sentMailContent", sentMailContent);
+        model.addAttribute("mailId", mailId);
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/sentMailContent";
+    }
+
+    @GetMapping("/favorites")
+    public String showFavoriteMailPage(@PathVariable("companyNo") String companyNo,
+                                       Authentication authentication,
+                                       Model model) {
+        String empId = authentication.getName();
+        List<MailReceptionVO> favoriteList = mailService.getFavoriteMailList(empId);
+        model.addAttribute("mailList", favoriteList);
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String mailListJson = mapper.writeValueAsString(favoriteList);
+            model.addAttribute("mailListJson", mailListJson);
+        } catch (JsonProcessingException e) {
+            model.addAttribute("mailListJson", "[]");
+        }
+
+        model.addAttribute("companyNo", companyNo);
+        return "gw:mail/mailFavorite";
+    }
+
+    @GetMapping("/favorites/list")
+    @ResponseBody
+    public List<MailReceptionVO> getFavoriteMailList(@PathVariable("companyNo") String companyNo,
+                                                     Authentication authentication) {
+        String empId = authentication.getName();
+        return mailService.getFavoriteMailList(empId);
+    }
+
+    @PostMapping("/favorites/add")
+    @ResponseBody
+    public String addFavorite(@PathVariable("companyNo") String companyNo,
+                              @RequestParam String mailId,
+                              Authentication authentication) throws Exception {
+        String empId = authentication.getName();
+        mailService.addFavorite(empId, mailId);
+        return "success";
+    }
+
+    @PostMapping("/favorites/remove")
+    @ResponseBody
+    public String removeFavorite(@PathVariable("companyNo") String companyNo,
+                                 @RequestParam String mailId,
+                                 Authentication authentication) throws Exception {
+        String empId = authentication.getName();
+        mailService.removeFavorite(empId, mailId);
+        return "success";
+    }
+} 

@@ -1,0 +1,43 @@
+@charset "UTF-8";
+
+
+
+.sepimg{
+	text-align: center;
+}
+
+#sep{
+	border: none;
+	background-color: rgb(61, 110, 75);
+	padding: 5%;
+}
+
+
+body {
+	background-color: rgb(61, 110, 75);
+}
+
+input[type="text"], input[type="password"], textarea {
+  	background-color: rgb(247, 239, 230);
+  	color: black;
+}
+
+#bottomTree{
+	background-color: rgb(61, 110, 75);
+	width: 20%;
+    height: auto; /* 비율 유지 */
+    border-color: rgb(61, 110, 75);
+}
+
+/* #footer { */
+/*     text-align: center;	 */
+/* } */
+
+.image-container {
+  width: 500px; /* 원하는 너비 */
+  height: 300px; /* 원하는 높이 */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(to bottom, rgba(0, 128, 0, 0.3), rgba(0, 128, 0, 0.7)), url('/sep/resources/groupware/images/green.jpeg');
+}

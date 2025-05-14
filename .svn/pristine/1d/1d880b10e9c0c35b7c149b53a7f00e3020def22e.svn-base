@@ -1,0 +1,252 @@
+<!--
+ * == 개정이력(Modification Information) ==
+ *
+ *   수정일               수정자           수정내용
+ *  ============      ============== =======================
+ *  2025. 3. 14.        JYS            회의실 예약 전체 조회 페이지 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회의실 예약 현황</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .date-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .date-navigation a {
+            margin: 0 10px;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .date-navigation a:hover {
+            text-decoration: underline;
+        }
+        #currentDateDisplay {
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            position: relative;
+        }
+        #datePicker {
+            display: none;
+            position: absolute;
+            z-index: 1050;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>회의실 예약 현황</h2>
+
+        <!-- 날짜 내비게이션 -->
+        <div class="date-navigation">
+            <a href="<c:url value='/${companyNo}/reservation/reservations/${prevDate}/grouped'/>">&lt;</a>
+            <span id="currentDateDisplay">
+                ${selectedDate} (<fmt:formatDate value="${selectedDateAsDate}" pattern="E"/>)
+                <input type="date" id="datePicker" value="${selectedDate}" />
+            </span>
+            <a href="<c:url value='/${companyNo}/reservation/reservations/${nextDate}/grouped'/>">&gt;</a>
+        </div>
+
+        <!-- 오늘 날짜의 예약 현황 -->
+        <h3>오늘의 예약</h3>
+        <table class="table table-bordered schedule-table">
+            <thead>
+                <tr>
+                    <th>회의실</th>
+                    <c:forEach var="hour" begin="9" end="21">
+                        <th>${hour}:00</th>
+                    </c:forEach>
+                </tr>
+            </thead>
+            <tbody>
+                <c:forEach var="room" items="${allRooms}">
+                    <tr>
+                        <td>${room.roomNm}</td>
+                        <c:forEach var="time" begin="9" end="21">
+                            <td>
+                                <c:set var="timeKey" value="${time}:00" />
+                                <c:choose>
+                                    <c:when test="${schedule[room.roomNo][timeKey] != null}">
+                                        <span class="reserved" 
+                                              onclick="location.href='<c:url value='/${companyNo}/reservation/reservations/${schedule[room.roomNo][timeKey].reservationNo}'/>'">
+                                            예약자: ${schedule[room.roomNo][timeKey].empId}
+                                        </span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="empty" onclick="openReservationModal('${room.roomNo}', '${timeKey}', '${selectedDate}')">
+                                            예약 가능
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+                        </c:forEach>
+                    </tr>
+                </c:forEach>
+            </tbody>
+        </table>
+
+        <!-- 로그인한 사용자의 예약 내역 -->
+        <h3>내 예약 내역</h3>
+        <c:choose>
+            <c:when test="${not empty myReservations}">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>예약 번호</th>
+                            <th>회의실</th>
+                            <th>예약 날짜</th>
+                            <th>시작 시간</th>
+                            <th>종료 시간</th>
+                            <th>내용</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach var="reservation" items="${myReservations}">
+                            <tr>
+                                <td>${reservation.reservationNo}</td>
+                                <td>${reservation.roomName}</td>
+                                <td><fmt:formatDate value="${reservation.reservationDate}" pattern="yyyy-MM-dd"/></td>
+                                <td><fmt:formatDate value="${reservation.reservationStartTime}" pattern="HH:mm"/></td>
+                                <td><fmt:formatDate value="${reservation.reservationEndTime}" pattern="HH:mm"/></td>
+                                <td>${reservation.reservationContent}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </c:when>
+            <c:otherwise>
+                <p>예약 내역이 없습니다.</p>
+            </c:otherwise>
+        </c:choose>
+    </div>
+
+    <div id="dataContainer" data-company-no="${companyNo}"></div>
+
+    <!-- 모달 창 구조 -->
+    <div class="modal fade" id="reservationModal" tabindex="-1" aria-labelledby="reservationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reservationModalLabel">예약 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 여기서 예약 등록 폼이 로드됩니다 -->
+                    <div id="reservationFormContent">
+                        <!-- 로딩 중 메시지 -->
+                        <p>폼을 불러오는 중입니다...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // 날짜 클릭 시 캘린더 표시
+   document.getElementById("currentDateDisplay").addEventListener("click", () => {
+            const datePicker = document.getElementById("datePicker");
+            datePicker.style.display = "block";
+            datePicker.focus();
+        });
+
+    // 포커스 해제 시 캘린더 숨기기
+    document.getElementById("datePicker").addEventListener("blur", () => {
+            document.getElementById("datePicker").style.display = "none";
+    });
+
+    // 날짜 선택 시 페이지 이동
+    document.getElementById("datePicker").addEventListener("change", function () {
+        const selectedDate = this.value; // 사용자가 선택한 날짜
+        const companyNo = document.getElementById("dataContainer").getAttribute("data-company-no"); // 회사 번호
+
+        if (!selectedDate) {
+            alert("날짜를 선택해주세요.");
+            return;
+        }
+
+        // URL에 '/sep/'를 포함하여 이동
+        const url = `/sep/${companyNo}/reservation/reservations/${selectedDate}/grouped`;
+        console.log("이동할 URL:", url); // 디버깅용 로그
+        window.location.href = url; // 해당 URL로 이동
+    });
+
+    // 예약 상세 조회 이동
+    function goToReservationDetail(reservationNo) {
+        const companyNo = document.getElementById("dataContainer").getAttribute("data-company-no"); // 회사 번호
+        const url = `/sep/${companyNo}/reservation/reservations/${reservationNo}`; // '/sep/' 추가
+        window.location.href = url;
+    }
+
+ // 예약 등록 모달 열기
+    function openReservationModal(roomNo, timeKey, selectedDate) {
+            const companyNo = document.getElementById("dataContainer").getAttribute("data-company-no");
+            if (!roomNo || !timeKey || !selectedDate || !companyNo) {
+                alert("예약 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.");
+                return;
+            }
+            const url = `/sep/${companyNo}/reservation/reservations/new?roomNo=${roomNo}&time=${timeKey}&date=${selectedDate}`;
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error: ${response.status}`);
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById("reservationFormContent").innerHTML = html;
+                    new bootstrap.Modal(document.getElementById("reservationModal")).show();
+                })
+                .catch(error => {
+                    console.error("Error loading modal content:", error);
+                    document.getElementById("reservationFormContent").innerHTML = `<p>폼을 불러오는 데 실패했습니다.</p>`;
+                });
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,158 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일      			수정자           수정내용
+ *  ============   	============== =======================
+ *  2025. 3. 12.     	JYS            최초 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .org-header {
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .tree {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tree ul {
+            list-style: none;
+            padding-left: 25px;
+            margin: 3px 0;
+            display: none; /* 기본적으로 하위 구조 숨김 */
+        }
+
+        .tree li {
+            position: relative;
+            margin: 2px 0;
+        }
+
+        .tree li:before {
+            content: "";
+            position: absolute;
+            left: -15px;
+            top: 6px;
+            width: 10px;
+            height: 1px;
+            background: #999;
+        }
+
+        .tree li:after {
+            content: "";
+            position: absolute;
+            left: -15px;
+            top: -6px;
+            width: 1px;
+            height: 100%;
+            background: #999;
+        }
+
+        .tree li:last-child:after {
+            height: 12px;
+        }
+
+        .node {
+            display: flex;
+            align-items: center;
+            padding: 2px 0;
+            cursor: pointer;
+        }
+
+        .node:hover {
+            background-color: #f0f0f0;
+        }
+
+        .toggle-icon {
+            margin-right: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+    <section>
+    <div class="org-header">부서 + × Q</div>
+
+    <ul class="tree">
+        <!-- 관리자 데모 섹션 -->
+        <li>
+            <div class="node">
+                <span class="toggle-icon">▶</span> 관리자 데모
+            </div>
+            <ul>
+                <li><div class="node"><span class="toggle-icon">▶</span> 원장 사장</div></li>
+                <li>
+                    <div class="node"><span class="toggle-icon">▶</span> 기획조정실</div>
+                    <ul>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 경영전략팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 운영지원팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 정보서비스팀</div></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <!-- 생산본부 섹션 -->
+        <li>
+            <div class="node"><span class="toggle-icon">▶</span> 생산본부</div>
+            <ul>
+                <li>
+                    <div class="node"><span class="toggle-icon">▶</span> 김기기 부장</div>
+                    <ul>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 정책연구팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 국제협력팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 1번팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 2팀</div></li>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 부서부서</div></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <!-- 산업분석실 섹션 -->
+        <li>
+            <div class="node"><span class="toggle-icon">▶</span> 산업분석실</div>
+            <ul>
+                <li><div class="node"><span class="toggle-icon">▶</span> 출판 디자인 본부</div></li>
+                <li><div class="node"><span class="toggle-icon">▶</span> 기업지원실</div></li>
+                <li><div class="node"><span class="toggle-icon">▶</span> 전문가</div></li>
+                <li>
+                    <div class="node"><span class="toggle-icon">▶</span> 영업본부</div>
+                    <ul>
+                        <li><div class="node"><span class="toggle-icon">▶</span> 1111</div></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <!-- 부서 미지정 -->
+        <li>
+            <div class="node">
+                <span class="toggle-icon">▶</span> 부서 미지정
+            </div>
+        </li>
+    </ul>
+ 
+
+    <script>
+        // 토글 기능 구현
+        document.querySelectorAll('.node').forEach(node => {
+            node.addEventListener('click', function(e) {
+                const nestedList = this.nextElementSibling;
+                if(nestedList && nestedList.tagName === 'UL') {
+                    nestedList.style.display = nestedList.style.display === 'block' ? 'none' : 'block';
+                    const toggleIcon = this.querySelector('.toggle-icon');
+                    if(toggleIcon) {
+                        toggleIcon.textContent = nestedList.style.display === 'block' ? '▼' : '▶';
+                    }
+                }
+            });
+        });
+    </script>

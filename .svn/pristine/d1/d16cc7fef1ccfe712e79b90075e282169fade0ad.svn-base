@@ -1,0 +1,49 @@
+/**
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 14.     	KMJ            최초 생성
+ *
+ * </pre>
+ */
+
+/* 공지사항 분류 선택 */
+function fn_change(obj) {
+    var category = document.querySelector('input[name="category"]:checked').value;
+    location.href = `/sep/${companyNo}/notice?category=` + category;
+}
+
+
+document.addEventListener('DOMContentLoaded', function(){
+	const deleteBtn = document.querySelector('#deleteButton'); // Delete 버튼
+	let noticeNo = [];
+
+	// Delete버튼 이벤트
+	deleteBtn.addEventListener('click', function(){
+		const selectNotice = document.querySelectorAll("input[name='noticeSelect']:checked"); // 체크된 공지사항 ID 가져오기
+
+		// 선택된 공지사항번호를 배열에 담기
+		selectNotice.forEach(function(checkbox){
+			let noticeId = checkbox.value; // 체크한 글번호 10진수로 변환
+			noticeNo.push(noticeId);
+		});
+		console.log(noticeNo); // 콘솔에 선택한 공지사항 번호 정상 출력됨
+
+		// 배열 내 각 요소의 타입 출력 (로깅용)
+		noticeNo.forEach((item, index) => {
+		    console.log(`noticeNo[${index}] 타입: ${typeof item}`);  // string타입으로 확인
+		});
+
+		document.querySelector('#noticeNoInput').value = noticeNo.join(',');
+		console.log("입력된 데이터 타입: ", typeof document.querySelector('#noticeNoInput').value); // string 타입
+
+
+		$('#deleteNoticeModal').modal('show'); // 모달 열기
+
+	});
+
+
+});
+

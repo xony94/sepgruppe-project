@@ -1,0 +1,23 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 4. 3.     	JSW            최초 생성
+ *
+ * </pre>
+ */
+$(document).ready(function () {
+    const date = $("#reservationDate").val();
+    const time = "${time}";
+
+    if (date && time) {
+        const start = new Date(`${date}T${time}`);
+        const end = new Date(start.getTime() + 60 * 60 * 1000); // 1시간 후
+
+        const format = (d) => d.toISOString().slice(0, 16); // datetime-local 형식
+        $("#reservationStartTime").val(format(start));
+        $("#reservationEndTime").val(format(end));
+    }
+});

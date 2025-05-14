@@ -1,0 +1,186 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .community-wrapper {
+        display: flex;
+        height: 100%;
+    }
+
+    .community-left {
+        width: 250px;
+        padding: 20px;
+        border-right: 2px solid #ddd;
+        background-color: #f9f9f9;
+        overflow-y: auto;
+    }
+
+    .community-right {
+        flex-grow: 1;
+        padding: 20px;
+        background-color: #fff;
+        overflow-y: auto;
+    }
+
+    .community-item {
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 5px;
+    }
+
+    .community-item:hover {
+        background-color: #e8f0ff;
+    }
+
+    .btn-create {
+        margin-bottom: 20px;
+    }
+
+    .community-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .member-list img {
+        object-fit: cover;
+    }
+
+    .member-list li {
+        font-size: 0.9rem;
+    }
+
+    .btn-back-home {
+        float: right;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="community-wrapper">
+    <!-- 왼쪽 영역 -->
+    <div class="community-left" id="community-left">
+        <button class="btn btn-primary btn-create"
+                onclick="location.href='${pageContext.request.contextPath}/${companyNo}/community/create'">
+            방 만들기
+        </button>
+
+        <ul class="list-unstyled">
+            <li class="community-item" onclick="loadCommunity('comm1')">개발자 커뮤니티</li>
+            <li class="community-item" onclick="loadCommunity('comm2')">디자인 커뮤니티</li>
+            <li class="community-item" onclick="loadCommunity('comm3')">마케팅 커뮤니티</li>
+        </ul>
+
+        <h6 class="mt-4">가입 멤버</h6>
+        <ul class="member-list list-unstyled" id="member-list"></ul>
+
+        <hr/>
+        <button class="btn btn-outline-primary w-100 mb-2">초대하기</button>
+        <button class="btn btn-outline-danger w-100">탈퇴하기</button>
+    </div>
+
+    <!-- 오른쪽 영역 -->
+    <div class="community-right" id="community-content">
+        <button class="btn btn-secondary btn-back-home" onclick="goHome()">🏠 초기화면으로</button>
+        <div class="community-title">커뮤니티 홈</div>
+        <p>좌측에서 커뮤니티를 선택하면 상세 정보가 이곳에 표시됩니다.</p>
+    </div>
+</div>
+
+<script>
+const dummyData = {
+    "comm1": {
+        name: "개발자 커뮤니티",
+        desc: "개발 관련 정보와 토론을 위한 공간입니다.",
+        posts: ["자바 질문 있어요", "스프링 부트 꿀팁", "이력서 리뷰해 주세요"],
+        members: [
+            { name: "홍길동", position: "과장", profileImg: "https://via.placeholder.com/32" },
+            { name: "김개발", position: "대리", profileImg: "https://via.placeholder.com/32" },
+            { name: "이프로그", position: "사원", profileImg: "https://via.placeholder.com/32" }
+        ]
+    },
+    "comm2": {
+        name: "디자인 커뮤니티",
+        desc: "디자인 트렌드와 포트폴리오 공유 공간입니다.",
+        posts: ["UI 트렌드", "Figma 플러그인 추천", "로고 피드백 요청"],
+        members: [
+            { name: "박디자이너", position: "팀장", profileImg: "https://via.placeholder.com/32" },
+            { name: "최크리에이티브", position: "과장", profileImg: "https://via.placeholder.com/32" }
+        ]
+    },
+    "comm3": {
+        name: "마케팅 커뮤니티",
+        desc: "마케팅 전략과 아이디어를 나누는 곳입니다.",
+        posts: ["SNS 운영 전략", "광고 성과 분석", "콘텐츠 캘린더 공유"],
+        members: [
+            { name: "장마케팅", position: "차장", profileImg: "https://via.placeholder.com/32" },
+            { name: "신홍보", position: "사원", profileImg: "https://via.placeholder.com/32" }
+        ]
+    }
+};
+
+function loadCommunity(communityId, push = true) {
+    const data = dummyData[communityId];
+    const right = document.getElementById("community-content");
+    const memberList = document.getElementById("member-list");
+
+    if (data) {
+        const postsList = data.posts.map(post => `<li>${post}</li>`).join("");
+        right.innerHTML = `
+            <button class="btn btn-secondary btn-back-home" onclick="goHome()">🏠 초기화면으로</button>
+            <div class="community-title">${data.name}</div>
+            <p>${data.desc}</p>
+            <hr/>
+            <h5>최근 게시물</h5>
+            <ul>${postsList}</ul>
+        `;
+
+        memberList.innerHTML = data.members.map(m => `
+            <li class="d-flex align-items-center mb-2">
+                <img src="${m.profileImg}" class="rounded-circle me-2" width="32" height="32">
+                <div>
+                    <strong>${m.name}</strong><br>
+                    <span class="text-muted" style="font-size: 0.8rem;">${m.position}</span>
+                </div>
+            </li>
+        `).join("");
+
+        if (push) {
+            history.pushState({ page: communityId }, '', '');
+        }
+    }
+}
+
+function goHome(push = true) {
+    const right = document.getElementById("community-content");
+    const memberList = document.getElementById("member-list");
+
+    right.innerHTML = `
+        <button class="btn btn-secondary btn-back-home" onclick="goHome()">🏠 초기화면으로</button>
+        <div class="community-title">커뮤니티 홈</div>
+        <p>좌측에서 커뮤니티를 선택하면 상세 정보가 이곳에 표시됩니다.</p>
+    `;
+    memberList.innerHTML = "";
+
+    if (push) {
+        history.pushState({ page: "home" }, '', '');
+    }
+}
+
+window.addEventListener("popstate", function (event) {
+    if (!event.state || event.state.page === "home") {
+        goHome(false);
+    } else {
+        loadCommunity(event.state.page, false);
+    }
+});
+
+// 초기 상태 등록
+document.addEventListener("DOMContentLoaded", () => {
+    goHome(false);
+});
+</script>

@@ -1,0 +1,76 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	KKM            최초 생성
+ *
+ * </pre>
+ */
+function initializeGantt(gantTaskList) {
+    const container = document.getElementById("gantt");
+
+    // 유효한 태스크만 필터링
+    const validTasks = gantTaskList.map(task => {
+        // 날짜 형식 변환
+        const startDate = new Date(task.start_date);
+        const endDate = new Date(task.end_date || task.start_date); // end_date가 없으면 start_date 사용
+
+        // 날짜 유효성 검사
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn(`Invalid task date detected. Task ID: ${task.id}, Start: ${task.start_date}, End: ${task.end_date}`);
+            return null;
+        }
+
+        // Frappe Gantt 형식으로 매핑
+        return {
+            id: task.id,
+            name: task.name,
+            start: startDate,
+            end: endDate,
+            progress: task.progress // 0~100 사이로 유지
+        };
+    }).filter(task => task !== null); // null 제거
+
+    console.log("Valid Gantt Tasks:", validTasks);
+
+    // Gantt 차트 초기화
+    const gantt = new Gantt(container, validTasks, {
+        view_mode: "Day", // 기본 보기 모드 (Day, Week, Month)
+        on_click: function (task) {
+            console.log("Task clicked:", task);
+        },
+        on_date_change: function (task, start, end) {
+            console.log(`Task updated: ${task.name}, Start: ${start}, End: ${end}`);
+        }
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

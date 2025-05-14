@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.works.mybatis.mappers.CommunityMapper">
+
+	<resultMap type="CommunityVO" id="communityMap" autoMapping="true">
+		<id property="communityNo" column="COMMUNITY_NO"/>
+		<result property="empId" column="EMP_ID"/>
+		<result property="memberCount" column="MEMBER_COUNT"/>
+		<result property="communityNm" column="COMMUNITY_NM"/>
+		<result property="communityContent" column="COMMUNITY_CONTENT"/>
+		<result property="communityCreatedAt" column="COMMUNITY_CREATED_AT"/>
+		<result property="communityIsClosed" column="COMMUNITY_IS_CLOSED"/>
+		<result property="closureReason" column="CLOSURE_REASON"/>
+		<result property="closureTimestamp" column="CLOSURE_TIMESTAMP"/>
+		<result property="joinedEmpId" column="JOINED_EMP_ID"/>
+		<result property="postCount" column="POST_COUNT"/>
+
+		<collection property="communityMember" ofType="CommunityMemberVO">
+			<id property="memberNo" column="MEMBER_NO" />
+			<result property="memberJoinDate" column="MEMBER_JOIN_DATE"/>
+			<result property="memberRole" column="MEMBER_ROLE"/>
+			<result property="memberActivityStatus" column="MEMBER_ACTIVITY_STATUS"/>
+		</collection>
+
+		<collection property="joinStatus" ofType="JoinStatusVO">
+			<id property="requestNo" column="REQUEST_NO"/>
+			<result property="userStatus" column="USER_STATUS"/>
+			<result property="requestDate" column="REQUEST_DATE"/>
+			<result property="rejectionReason" column="REJECTION_REASON"/>
+		</collection>
+
+		<collection property="employee" ofType="EmployeeVO">
+			<id property="empId" column="EMP_ID"/>
+			<result property="empNm" column="EMP_NM"/>
+		</collection>
+
+		<collection property="board" ofType="BoardVO">
+			<id property="boardNo" column="BOARD_NO"/>
+			<result property="communityNo" column="COMMUNITY_NO"/>
+			<result property="boardNm" column="BOARD_NM"/>
+			<result property="boardContent" column="BOARD_CONTENT"/>
+		</collection>
+	</resultMap>
+
+<!-- 가입된 커뮤니티 회원정보 조회 -->
+<select id="communityMember" resultMap="communityMap">
+	SELECT
+		C.COMMUNITY_NO
+	    , C.EMP_ID
+	    , C.MEMBER_ROLE
+	    , E.EMP_NM
+	FROM
+	    COMMUNITY_MEMBER C
+	LEFT JOIN
+		EMPLOYEE E ON C.EMP_ID = E.EMP_ID
+	WHERE
+	    COMMUNITY_NO = #{communityNo}
+</select>
+
+<!-- 가입된 커뮤니티 방 정보 조회 -->
+<select id="memberCommunityList" resultMap="communityMap">
+	SELECT
+	    CM.COMMUNITY_NO
+	    , CM.MEMBER_NO
+	    , CM.EMP_ID
+	    , CM.MEMBER_JOIN_DATE
+	    , CM.MEMBER_ROLE
+	    , CM.MEMBER_ACTIVITY_STATUS
+	    , JS.USER_STATUS
+	    , JS.REQUEST_DATE
+	    , C.COMMUNITY_NO
+	    , C.COMMUNITY_NM
+	    , C.COMMUNITY_CONTENT
+	    , C.COMMUNITY_CREATED_AT
+	    , C.COMMUNITY_IS_CLOSED
+	    , (SELECT EMP_NM FROM EMPLOYEE E WHERE E.EMP_ID = C.EMP_ID) AS EMP_NM
+	    , (
+	        SELECT
+	            COUNT(*)
+	        FROM
+	            POST P
+	        JOIN BOARD B ON P.BOARD_NO = B.BOARD_NO
+	        WHERE B.COMMUNITY_NO = C.COMMUNITY_NO
+	        AND P.POST_IS_DRAFT = 'N'
+	    ) AS POST_COUNT
+	    , (
+	        SELECT
+	            COUNT(*)
+	        FROM
+	            COMMUNITY_MEMBER CM2
+	        WHERE CM2.COMMUNITY_NO = C.COMMUNITY_NO
+	    ) AS MEMBER_COUNT
+	FROM
+	    COMMUNITY_MEMBER CM
+	LEFT JOIN
+	    JOIN_STATUS JS
+	    ON CM.REQUEST_NO = JS.REQUEST_NO
+	    AND CM.COMMUNITY_NO = JS.COMMUNITY_NO
+	    AND CM.EMP_ID = JS.EMP_ID
+	LEFT JOIN
+	    COMMUNITY C
+	    ON CM.COMMUNITY_NO = C.COMMUNITY_NO
+	LEFT JOIN
+	    EMPLOYEE E
+	    ON CM.EMP_ID = E.EMP_ID
+	WHERE
+	    CM.EMP_ID = #{empId}
+</select>
+
+<!-- 커뮤니티방 전체 목록 조회 -->
+<select id="communityList" resultMap="communityMap">
+	SELECT
+	    C.COMMUNITY_NM
+	    , COUNT(CM.MEMBER_NO) AS MEMBER_COUNT
+	    , E.EMP_NM
+	    , TO_CHAR(C.COMMUNITY_CREATED_AT, 'YYYY-MM-DD') AS COMMUNITY_CREATED_AT
+	    , C.COMMUNITY_NO
+	    , CM2.EMP_ID AS JOINED_EMP_ID
+	FROM
+	    COMMUNITY C
+	LEFT JOIN
+	    COMMUNITY_MEMBER CM ON C.COMMUNITY_NO = CM.COMMUNITY_NO
+	LEFT JOIN
+	    EMPLOYEE E ON C.EMP_ID = E.EMP_ID
+	LEFT JOIN
+	    COMMUNITY_MEMBER CM2 ON C.COMMUNITY_NO = CM2.COMMUNITY_NO AND CM2.EMP_ID = #{empId}
+	WHERE
+	    C.COMMUNITY_IS_CLOSED = 'N'
+	GROUP BY
+	    C.COMMUNITY_NM
+	    , E.EMP_NM
+	    , C.COMMUNITY_CREATED_AT
+	    , C.COMMUNITY_NO
+	    , CM2.EMP_ID
+</select>
+
+<!-- 커뮤니티방의 게시글 목록 조회 -->
+<select id="boardList" resultMap="communityMap">
+	SELECT
+	    C.COMMUNITY_NO
+	    , C.COMMUNITY_NM
+	    , C.COMMUNITY_CONTENT
+	    , C.COMMUNITY_CREATED_AT
+	    , B.BOARD_NO
+	    , B.BOARD_NM
+	    , B.BOARD_CONTENT
+	    , P.POST_NO
+	    , P.POST_TITLE
+	    , P.POST_CREATED_AT
+	    , P.POST_LIKE_COUNT
+	    , P.POST_IS_DRAFT
+	    , P.POST_ALLOW_COMMENTS
+	    , CO.REPLY_NO
+	    , CO.REPLY_CONTENT
+	    , CO.REPLY_CREATE_DATE
+	    , L.LIKE_NO
+	    , L.LIKE_IS_ACTIVE
+	    , CM.MEMBER_ROLE
+	    , M.EMP_NM AS EMP_NM
+	FROM
+	    COMMUNITY C
+	    LEFT JOIN BOARD B ON C.COMMUNITY_NO = B.COMMUNITY_NO
+	    LEFT JOIN POST P ON B.BOARD_NO = P.BOARD_NO
+	    LEFT JOIN COMMENTS CO ON P.POST_NO = CO.POST_NO
+	    LEFT JOIN LIKES L ON P.POST_NO = L.POST_NO
+	    LEFT JOIN COMMUNITY_MEMBER CM ON CM.COMMUNITY_NO = C.COMMUNITY_NO
+	    AND CM.MEMBER_NO = P.MEMBER_NO
+	    LEFT JOIN EMPLOYEE M ON M.EMP_ID = P.EMP_ID
+	WHERE
+	    C.COMMUNITY_NO = #{communityNo}
+	ORDER BY
+	    B.BOARD_NO, P.POST_NO, CO.REPLY_NO
+</select>
+
+</mapper>

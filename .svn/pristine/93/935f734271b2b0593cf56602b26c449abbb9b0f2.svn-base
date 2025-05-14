@@ -1,0 +1,119 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일      			수정자           수정내용
+ *  ============   	============== =======================
+ *  2025. 3. 25.     	KKM            최초 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="security" %>
+<security:authentication property="principal.realUser" var="realUser"/>
+	<meta charset="UTF-8">
+    <title>업무 상세 정보</title>
+    <link href="${pageContext.request.contextPath }/resources/groupware/css/project/taskDetail.css" rel="stylesheet">
+    <div class="card-body">
+        <ul class="nav nav-tabs nav-line nav-color-secondary" id="line-tab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link" id="line-project-tab" href="${pageContext.request.contextPath}/${companyNo}/project" role="tab" aria-controls="pills-project" aria-selected="true">목록</a>
+            </li>
+            <li class="nav-item">
+		        <a class="nav-link" id="line-outline-tab" href="${pageContext.request.contextPath}/${companyNo}/project/${taskDetail.projectNo}" role="tab" aria-controls="pills-work" aria-selected="true">개요</a>
+		    </li>
+            <li class="nav-item">
+                <a class="nav-link" id="line-work-tab" href="${pageContext.request.contextPath}/${companyNo}/task?projectNo=${taskDetail.projectNo}" role="tab" aria-controls="pills-work" aria-selected="true">일감</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="line-gantt-tab" data-bs-toggle="pill" href="#line-gantt" role="tab" aria-controls="pills-gantt" aria-selected="false">간트차트</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="line-calendar-tab" data-bs-toggle="pill" href="#line-calendar" role="tab" aria-controls="pills-calendar" aria-selected="false">캘린더</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h1>업무 상세 정보</h1>
+        
+        <div class="container mt-4">
+		    <div class="card shadow-sm border-0 rounded-3">
+		        <div class="card-header text-black">
+         			<h4 class="mb-0">${taskDetail.taskTitle}</h4>
+		        </div>
+		        <div class="card-body">
+		            <p class="card-text"><strong>업무 내용:</strong>${taskDetail.taskContent}</p>
+		
+		            <p><strong>진행률:</strong> ${taskDetail.progress}%</p>
+		            <div class="progress mb-3" style="height: 20px;">
+		                <div class="progress-bar 
+		                            <c:choose>
+		                                <c:when test="${taskDetail.progress >= 80}">bg-success</c:when>
+		                                <c:when test="${taskDetail.progress >= 40}">bg-warning</c:when>
+		                                <c:otherwise>bg-danger</c:otherwise>
+		                            </c:choose>"
+		                    role="progressbar"
+		                    style="width: ${taskDetail.progress}%;">
+		                    ${taskDetail.progress}%
+		                </div>
+		            </div>
+		
+		            <p><strong>업무 시작일:</strong> <fmt:formatDate value="${taskDetail.taskStartDate}" pattern="yyyy-MM-dd" /></p>
+		            <p><strong>업무 마감일:</strong> <fmt:formatDate value="${taskDetail.taskEndDate}" pattern="yyyy-MM-dd" /></p>
+		            <p><strong>담당자:</strong> ${taskDetail.empNm}</p>
+		            <p><strong>업무 생성일:</strong> <fmt:formatDate value="${taskDetail.taskCreateDate}" pattern="yyyy-MM-dd" /></p>
+		        </div>
+		    </div>
+		</div>
+	        <!-- 삭제 버튼 추가 -->
+			<form id="deleteTaskForm" action="${pageContext.request.contextPath}/${companyNo}/task/${taskNo}/delete" method="post">
+			    <input type="hidden" name="_method" value="delete"/>
+			    <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+			    <input type="hidden" name="projectNo" value="${taskDetail.projectNo}"/>
+        		<c:if test="${realUser.empId == taskDetail.empId || realUser.empId == taskDetail.projectEmpId}">
+        		<button type="button" class="btn btn-secondary" id="editBtn">수정</button>
+			    <button type="button" class="btn btn-danger" onclick="confirmDelete('${taskNo}',
+			        '${taskDetail.projectNo}',
+			        '${companyNo}',
+			        '${_csrf.parameterName}',
+			        '${_csrf.token}')">
+			        <i class="fa fa-trash"></i> 삭제하기</button>
+				</c:if>
+			</form>
+			<div id="editForm" class="mt-4 d-none">
+		    <div class="form-group">
+		        <label>업무 제목</label>
+		        <input type="text" class="form-control" id="editTaskTitle" value="${taskDetail.taskTitle}">
+		    </div>
+		    <div class="form-group mt-2">
+		        <label>업무 내용</label>
+		        <textarea class="form-control" id="editTaskContent" rows="4">${taskDetail.taskContent}</textarea>
+		    </div>
+		    <div class="form-group mt-2">
+		        <label>진행률</label>
+		        <select class="form-control w-25" id="editProgress">
+		            <c:forEach var="i" begin="0" end="100" step="10">
+		                <option value="${i}" <c:if test="${i == taskDetail.progress}">selected</c:if>>${i}%</option>
+		            </c:forEach>
+		        </select>
+		    </div>
+		    <div class="row mt-2">
+		        <div class="col">
+		            <label>업무 시작일</label>
+		            <input type="date" class="form-control" id="editStartDate" value="<fmt:formatDate value='${taskDetail.taskStartDate}' pattern='yyyy-MM-dd' />" />
+		        </div>
+		        <div class="col">
+		            <label>업무 마감일</label>
+		            <input type="date" class="form-control" id="editEndDate" value="<fmt:formatDate value='${taskDetail.taskEndDate}' pattern='yyyy-MM-dd' />" />
+		        </div>
+		    </div>
+		
+		    <button class="btn btn-success mt-3" id="saveBtn">수정 완료</button>
+		</div>
+		<script>
+			const contextPath = '${pageContext.request.contextPath}';
+			console.log("projectNo for delete: '${taskDetail.projectNo}'");
+		</script>
+<script src="${pageContext.request.contextPath }/resources/groupware/js/task/taskDetail.js"></script>

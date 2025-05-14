@@ -1,0 +1,185 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일         수정자           수정내용
+ *  ============   ============== =======================
+ *  2025. 3. 24.      SJH            최초 생성
+-->
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>설문 응답</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f9fbfd; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        .question { margin-bottom: 20px; }
+        .question strong { display: block; margin-bottom: 5px; }
+        .options { margin-left: 10px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 id="surveyTitle">설문 제목</h2>
+    <p id="surveyDescription">설문 설명</p>
+    <div id="questionList"></div>
+    <button id="endSurveyBtn">설문 완료하기</button>
+</div>
+
+<!-- survey.jsp 전체 리팩토링해서 다시 줘 : 이부분다시하기 --> 
+<script>
+    const surveyId = "${surveyId}";
+    const companyNo = "${companyNo}";
+    const contextPath = "${pageContext.request.contextPath}";
+
+    // ✅ 서버에서 넘긴 JSON 문자열을 JS 객체로 파싱
+    const surveyData = JSON.parse('${surveyJson}'.replace(/&quot;/g, '"'));
+
+    // 잘못된 접근 처리
+    if (!surveyId) {
+        alert("잘못된 접근입니다.");
+        window.location.href = contextPath + "/" + companyNo + "/survey";
+    }
+
+    // 설문 표시
+    function displaySurveyDetails(survey) {
+        document.getElementById("surveyTitle").textContent = survey.title || "제목 없음";
+        const desc = survey.description || (survey.pages[0]?.description ?? "설명 없음");
+        document.getElementById("surveyDescription").textContent = desc;
+
+        const questionList = document.getElementById("questionList");
+        questionList.innerHTML = survey.pages[0].questions.map(q => {
+            const optionsHtml = getQuestionOptionsHtml(q);
+            return `
+                <div class="question">
+                    <strong>${q.headings[0].heading}</strong>
+                    ${optionsHtml}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function getQuestionOptionsHtml(question) {
+        if (!question.answers) return createTextareaHtml(question.id);
+        return question.family === 'multiple_choice' ?
+            createOptionsHtml(question, "checkbox") :
+            createOptionsHtml(question, "radio");
+    }
+
+    function createTextareaHtml(id) {
+        return `<div class="options"><textarea name="q_${id}" rows="3" style="width:100%"></textarea></div>`;
+    }
+
+    function createOptionsHtml(question, type) {
+        return `
+        <div class="options">
+            ${question.answers.choices.map(choice => `
+                <div class="option">
+                    <input type="${type}" name="q_${question.id}" value="${choice.text}">
+                    <label>${choice.text}</label>
+                </div>
+            `).join('')}
+        </div>`;
+    }
+
+    function collectAnswers() {
+        return [...document.querySelectorAll('.question')].map((question, index) => {
+            const questionId = surveyData.pages[0].questions[index].id;
+            const answer = getQuestionAnswer(question);
+            return answer ? { question: questionId, answer } : null;
+        }).filter(Boolean);
+    }
+
+    function getQuestionAnswer(question) {
+        const selected = question.querySelectorAll('input:checked');
+        if (selected.length) return [...selected].map(input => input.value);
+
+        const textarea = question.querySelector('textarea');
+        return textarea?.value || null;
+    }
+
+    async function getOrCreateCollector() {
+        const res = await fetch(`${contextPath}/${companyNo}/surveyApi/surveys/${surveyId}/collectors`);
+        const data = await res.json();
+        if (res.ok && data.data?.length > 0) {
+            return data.data[0].id;
+        }
+        const createRes = await fetch(`${contextPath}/${companyNo}/surveyApi/surveys/${surveyId}/collectors`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'weblink', name: 'Web Collector' })
+        });
+        const createData = await createRes.json();
+        if (!createRes.ok) throw new Error(createData.error?.message || 'Collector 생성 실패');
+        return createData.id;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        displaySurveyDetails(surveyData);
+
+        document.getElementById("endSurveyBtn").addEventListener("click", async () => {
+            try {
+                const answers = collectAnswers();
+                if (!answers.length) {
+                    alert("최소 한 문항 이상 응답해주세요.");
+                    return;
+                }
+
+                const collectorId = await getOrCreateCollector();
+                const response = await submitSurveyResponse(answers, collectorId);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || "응답 제출 실패");
+                }
+
+                alert("응답이 저장되었습니다!");
+                window.location.href = contextPath + "/" + companyNo + "/survey";
+            } catch (err) {
+                alert("제출 중 오류 발생: " + err.message);
+            }
+        });
+    });
+
+    async function submitSurveyResponse(answers, collectorId) {
+        const requestData = {
+            collector_id: collectorId,
+            pages: [{
+                id: surveyData.pages[0].id,
+                questions: answers.map(ans => formatQuestionResponse(ans))
+            }]
+        };
+
+        return fetch(`${contextPath}/${companyNo}/surveyApi/collectors/${collectorId}/responses`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData)
+        });
+    }
+
+    function formatQuestionResponse(ans) {
+        const q = surveyData.pages[0].questions.find(q => q.id === ans.question);
+        if (!q) return null;
+
+        if (q.family === 'multiple_choice' || q.family === 'single_choice') {
+            return {
+                id: ans.question,
+                answers: (Array.isArray(ans.answer) ? ans.answer : [ans.answer]).map(a => {
+                    const matched = q.answers.choices.find(c => c.text === a);
+                    return { choice_id: matched?.id };
+                })
+            };
+        }
+
+        return {
+            id: ans.question,
+            answers: [{ text: ans.answer }]
+        };
+    }
+</script>
+</body>
+</html>

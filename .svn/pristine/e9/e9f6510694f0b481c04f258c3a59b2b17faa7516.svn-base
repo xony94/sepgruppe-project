@@ -1,0 +1,45 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+// DOMContentLoaded 이벤트가 발생하면 실행
+document.addEventListener("DOMContentLoaded", () => {
+    // 기본 경로(basePath) 설정
+    const apprBasePath = window.location.pathname.split("/").slice(0, -2).join("/");
+    const apprInfoModal = document.querySelector("#apprInfoModal");
+
+    // FancyTree 초기화 함수
+    const initFancyTree = () => {
+        
+        // FancyTree 생성
+        $("#depTree").fancytree({
+            source: {
+                url: `${apprBasePath}/organization/parentDep`,
+                cache: false
+            },
+			lazyLoad: function(event, data) {
+                var node = data.node;
+                let mode = "employee";
+                if (!node.data.parentDeptCd) {
+                    mode = "department";
+                }
+                // Load child nodes via Ajax
+                data.result = {
+                    url: `${apprBasePath}/organization/childeDep`,
+                    data: {mode: mode, parent: node.key},
+                    cache: false
+                };
+            }
+        });
+    };
+
+    // 모달이 열릴 때 FancyTree 로드
+    apprInfoModal.addEventListener('shown.bs.modal', initFancyTree);
+});
+

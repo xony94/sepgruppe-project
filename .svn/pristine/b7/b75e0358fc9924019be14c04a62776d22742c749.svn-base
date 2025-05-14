@@ -1,0 +1,130 @@
+package kr.or.ddit.works.organization.service;
+
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.works.mybatis.mappers.DepartmentMapper;
+import kr.or.ddit.works.mybatis.mappers.EmployeeMapper;
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+
+/**
+ * 
+ * @author JSW
+ * @since 2025. 3. 31.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 31.     	JSW	          최초 생성
+ *
+ * </pre>
+ */
+@Service
+public class DepartmentServiceImpl implements DepartmentService {
+	
+	@Autowired
+	private DepartmentMapper mapper;
+	
+	@Autowired
+	private EmployeeMapper empMapper;
+	
+	@Override
+	public List<DepartmentVO> selectListAllDepartment() {
+		return mapper.selectListAllDepartment();
+	}
+	
+	@Override
+	public int addDepartment(DepartmentVO dept) {
+		return mapper.insertDepartment(dept);
+	}
+
+	@Override
+	public int deleteDepartment(String companyNo, String deptCd) {
+		return mapper.deleteDepartment(companyNo, deptCd);
+	}
+
+	@Override
+	public int updateDepartmentField(DepartmentVO dept) {
+		// 1. 기존 부서장 조회
+		String managerEmpId = mapper.selectManagerDeptCd(dept.getDeptCd(), dept.getCompanyNo());
+		
+		// 2. department 테이블 update
+		int result = mapper.updateDepartmentField(dept);
+		
+		// 3. 기존 부서장과 새 부서장이 다르면 -> 기존 부서장의 dept_cd 제거
+		 if (managerEmpId != null && !managerEmpId.equals(dept.getManagerEmpId())) {
+		        empMapper.clearDeptCd(managerEmpId); // dept_cd = NULL
+		 }
+		
+		// 4. 새 부서장이 있으면 그 사원에게 dept_cd 설정
+	    if (dept.getManagerEmpId() != null && !dept.getManagerEmpId().isEmpty()) {
+	        empMapper.updateDeptCd(dept.getManagerEmpId(), dept.getDeptCd());
+	    }
+	    
+	    return result;
+	}
+
+	@Override
+	public List<DepartmentVO> parseExcel(MultipartFile file, String companyNo) throws Exception {
+	    List<DepartmentVO> list = new ArrayList<>();
+
+	    try (InputStream is = file.getInputStream()) {
+	        Workbook workbook = WorkbookFactory.create(is);
+	        Sheet sheet = workbook.getSheetAt(0);
+
+	        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+	            Row row = sheet.getRow(i);
+	            if (row == null) continue;
+
+	            DepartmentVO dept = new DepartmentVO();
+	            dept.setDeptCd(getCellValue(row.getCell(0)));
+	            dept.setParentDeptCd(getCellValue(row.getCell(1)));
+	            dept.setDeptName(getCellValue(row.getCell(2)));
+	            dept.setManagerEmpId(getCellValue(row.getCell(3)));
+	            dept.setCreateAt(LocalDate.now().toString());
+	            dept.setCompanyNo(companyNo);
+
+	            list.add(dept);
+	        }
+	    }
+
+	    return list;
+	}
+
+	private String getCellValue(Cell cell) {
+	    if (cell == null) return null;
+	    cell.setCellType(CellType.STRING);
+	    return cell.getStringCellValue().trim();
+	}
+
+	@Override
+	public int bulkInsertDepartments(List<DepartmentVO> deptList) {
+	    int count = 0;
+	    for (DepartmentVO dept : deptList) {
+	        try {
+	            mapper.insertDepartment(dept);
+	            dept.setStatus("성공");
+	            count++;
+	        } catch (Exception e) {
+	            dept.setStatus("실패");
+	        }
+	    }
+	    return count;
+	}
+}
+	

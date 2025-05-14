@@ -1,0 +1,88 @@
+<!-- 
+ * == 개정이력(Modification Information) ==
+ *   
+ *   수정일      			수정자           수정내용
+ *  ============   	============== =======================
+ *  2025. 3. 13.     	JYS            최초 생성
+ *
+-->
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<link href="${pageContext.request.contextPath }/resources/groupware/css/employee/employeeList.css" rel="stylesheet" />
+<h4 class="title">사원통합관리</h4>
+
+<div class="content_info" id="count_info">
+	<ul class="info_summary">
+		<li class="first">
+			<span class="tit">현재 사원 수</span>
+			<span class="txt"><strong>${pageData.totalRecord }</strong> 명</span>
+			<span class="desc">
+				정상 ${pageData.totalRecord }명
+				중지된 멤버 0명
+			</span>
+		</li>
+		<li style="display: none;">
+			<span class="tit">추가 가능한 멤버 수</span>
+			<span class="txt"><strong>19</strong> 명</span>
+		</li>
+		<span class="wrap_action" style="display: block;">
+			<span class="ic_adm ic_accordion_open" title="펼치기"></span>
+		</span>
+		<span class="wrap_action" style="display: none;">
+			<span class="ic_adm ic_accordion_close" title="접기"></span>
+		</span>
+	</ul>
+</div>
+<div class="container">
+	<div class="col-md-12">
+		<div class="card">
+			<div class="card-body">
+				<div class="table-responsive">
+					<table id="multi-filter-select"
+						class="display table table-striped table-hover">
+						<thead>
+							<tr>
+								<th>사번</th>
+								<th>이름</th>
+								<th>부서</th>
+								<th>직책</th>
+								<th>이메일</th>
+							</tr>
+						</thead>
+						<tbody>
+							<c:forEach var="employee" items="${pageData.dataList}">
+								<tr>
+									<td>${employee.empNo}</td>
+									<td>${employee.empNm}</td>
+									<td>${employee.deptName}</td>
+									<td>${employee.positionName}</td>
+									<td>${employee.empEmail}</td>
+								</tr>
+							</c:forEach>
+						</tbody>
+					</table>
+						<div>${paginationHtml}</div>
+						<div id="search-ui" class="mb-3">
+						  <div class="input-group">
+						    <select name="searchType" class="form-select" data-init-value="${simpleCondition.searchType}">
+						      <option value="empNm">이름</option>
+						      <option value="deptName">부서</option>
+						      <option value="positionName">직책</option>
+						    </select>
+						    <input type="text" name="searchWord" class="form-control" placeholder="검색어 입력" data-init-value="${simpleCondition.searchWord}">
+						    <button type="button" class="btn btn-primary" id="search-btn">검색</button>
+						  </div>
+						</div>
+					<form id="search-form">
+						<input type="hidden" name="page"/>
+						<input type="hidden" name="searchType" value="${simpleCondition.searchType}" />
+  						<input type="hidden" name="searchWord" value="${simpleCondition.searchWord}" />
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script src="${pageContext.request.contextPath }/resources/groupware/js/employee/employeeList.js"></script>
+<script src="${pageContext.request.contextPath }/resources/groupware/js/common/paging.js"></script>

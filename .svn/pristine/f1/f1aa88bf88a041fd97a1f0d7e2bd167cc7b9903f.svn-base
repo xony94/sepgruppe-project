@@ -1,0 +1,73 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 21.     	JSW            최초 생성
+ *
+ * </pre>
+ */
+@charset "UTF-8";
+/* 팝업창 스타일 */
+.popup {
+  display: none; /* 처음에는 숨김 */
+  position: fixed;
+  left: 250px; /* 사이드바 너비에 맞게 조정 */
+  top: 0;
+  width: calc(100% - 250px); /* 사이드바 너비를 제외한 나머지 공간 */
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 반투명 배경 */
+  z-index: 1000;
+}
+
+.popup-content {
+  background-color: #fff;
+  margin: 5% auto; /* 팝업창 위치 조정 */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 800px; /* 팝업창 최대 너비 */
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+/* 트리 구조 스타일 */
+.tree, .tree ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+.tree li {
+  margin: 10px 0;
+  position: relative;
+}
+
+.tree li::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -15px;
+  border-left: 1px solid #ccc;
+  height: calc(100% + 10px);
+}
+
+.tree li::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: -15px;
+  border-top: 1px solid #ccc;
+  width: 15px;
+}
+
+.tree li:last-child::before {
+  height: 20px;
+}

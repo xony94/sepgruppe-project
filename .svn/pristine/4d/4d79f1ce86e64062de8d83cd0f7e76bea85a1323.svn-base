@@ -1,0 +1,109 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일       			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 4. 2.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+const apprLineAddBtn = document.querySelector("#apprLineAddBtn");
+const apprLineChangeBtn = document.querySelector("#apprLineChangeBtn");
+
+document.addEventListener("DOMContentLoaded", () => {
+    apprLineAddBtn?.addEventListener("click", addApprovalLine);
+    apprLineChangeBtn?.addEventListener("click", changeApprovalLine);
+});
+
+const autoLineSetTbody = document.querySelector("#autoLineSetTbody");
+
+// 부트스트랩 토스트 메시지 출력 함수
+function showToast(message) {
+    const toastEl = document.getElementById("liveToast");
+    const toastBody = toastEl.querySelector(".toast-body");
+    toastBody.textContent = message;
+
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
+// 결재자 추가
+function addApprovalLine() {
+    if (!autoLineSetTbody) return;
+
+    const path = document.body.getAttribute('data-context-path');
+    
+    axios.get(`${path}/approval/admin/selectType`)
+        .then(resp => {
+            const { apprLineType, position } = resp.data;
+            
+            const apprLineTypeOptions = apprLineType.map(item => `<option id="${item.commCodeNo}" value="${item.commCodeName}">${item.commCodeName}</option>`).join("");
+            const positionOptions = position.map(item => `<option id="${item.positionCd}" value="${item.positionName}">${item.positionName}</option>`).join("");
+            
+            const existingRows = autoLineSetTbody.querySelectorAll("tr");
+            const rowCount = existingRows.length + 1;
+            
+            const newRow = document.createElement("tr");
+            newRow.innerHTML =  `
+                <td>${rowCount}</td>
+                <td>
+                    <select>
+                        <option value="none">==타입==</option>
+                        ${apprLineTypeOptions}
+                    </select>
+                </td>
+                <td>
+                    <select>
+                        <option value="none">==직위==</option>
+                        ${positionOptions}
+                    </select>
+                </td>
+                <td><i class="fa fa-trash delete-icon" style="cursor:pointer;"></i></td>
+            `;
+            autoLineSetTbody.appendChild(newRow);
+            deleteIcon(newRow);
+        })
+        .catch(error => console.error("데이터 불러오기 실패:", error));
+}
+
+// 삭제 아이콘 클릭 시 해당 행 삭제
+function deleteIcon(row){
+    row.querySelector(".delete-icon").addEventListener("click", () => {
+        row.remove();
+        updateRowNumbers();
+    });
+}
+
+// 순서 자동 업데이트 함수
+function updateRowNumbers() {
+    const rows = document.querySelectorAll("#autoLineSetTbody tr");
+    rows.forEach((row, index) => {
+        row.querySelector("td:first-child").textContent = index + 1;
+    });
+}
+
+// 결재자 순서 바꾸기
+let sortableInstance = null;
+function changeApprovalLine(){
+    const rows = document.querySelectorAll("#autoLineSetTbody tr");
+
+    if (rows.length === 0) {
+        showToast("결재자가 존재하지 않습니다.");
+        return;
+    }
+
+    if (!sortableInstance) {
+        sortableInstance = new Sortable(autoLineSetTbody, {
+            animation: 150,
+            handle: "td",
+            onEnd: updateRowNumbers,
+        });
+         apprLineChangeBtn.innerHTML = "순서 변경 완료";
+    } else {
+        sortableInstance.destroy();
+        sortableInstance = null;
+		apprLineChangeBtn.innerHTML = `<i class="fa fa-sort"></i>&nbsp;순서 바꾸기`
+
+    }
+}

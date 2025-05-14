@@ -1,0 +1,123 @@
+
+document.addEventListener('DOMContentLoaded', function(){
+	/* myPage 프로필 사진 삭제 클릭 시 목록에서 제외 기능 */
+	const $fileInput = document.querySelector('.fileInput');
+	const $profileImage = document.querySelector('.profileImage');
+	const $deleteButton = document.querySelector('.deleteBtn');
+
+	/* myPage 필수입력값 및 파일 검증 에러 처리 */
+	const $updateBtn = document.querySelector('#button');
+	const $pwErrorCk = document.querySelector("#pwErrorCk");
+	const $zipError = document.querySelector("#zipError");
+	const $addrError = document.querySelector("#addrError");
+	const $fileError = document.querySelector("#fileError");
+	const $passwardError = document.querySelector("passwardError");
+
+	/* myPage 프로필 사진 삭제 클릭 시 목록에서 제외 기능 */
+	$deleteButton.addEventListener('click', () => {
+		$profileImage.src = '';
+		$fileInput.value = '';
+	});
+
+	/* myPage 필수입력값 에러 처리 */
+
+/*	$updateBtn.addEventListener('click', ()=>{
+		let emp_pw = $("#empPw").val();
+		let empPw_ck = $("#empPwCk").val();
+		let emp_zip = $("#empZip").val();
+		let emp_Add1 = $("#empAdd1").val();
+		let imgFile = $('#isFile').val();
+		let fileForm = /(.*?)\.(jpg|jpeg|png)$/;
+		let empPassward = $('#empPassward').val();
+
+		if(emp_zip == ""){
+			$zipError.textContent = "★우편번호를 선택해주세요★";
+			$("#empZip").focus();
+			return;
+		}else{
+			$zipError.textContent = "";
+		}
+
+		 Daum API 넣으면 삭제
+		if(emp_Add1 == ""){
+			$addrError.textContent = "★주소를 입력해주세요★";
+			$("#empAdd1").focus();
+			return;
+		}else{
+			$addrError.textContent = "";
+		}
+
+		if(empPassward == ""){
+			$passwardError.textContent = "★현재 비밀번호를 입력해주세요★";
+			$("#empPassward").focus();
+			return;
+		}else{
+			$passwardError.textContent = "";
+		}
+
+		if(emp_pw != empPw_ck){
+			$pwErrorCk.textContent = "★입력한 비밀번호가 일치하지 않습니다★";
+			$("#empPwCk").focus();
+			return;
+		}else{
+			$pwErrorCk.textContent = "";
+		}
+
+		if(!imgFile.match(fileForm)){
+			$fileError.textContent = "★이미지 형식만 업로드 가능합니다★";
+			return;
+		}else{
+			$fileError.textContent = "";
+		}
+		document.frm.submit();
+
+	});*/
+
+
+
+});
+
+/* DB 이미지 삭제 */
+function deleteImage(empId) {
+	    $.ajax({
+	        url: '/sep/a001/employee/deleteImg',
+	        type: 'POST',
+	        data: { empId: empId },
+	        success: function(resp) {
+	            $('.profileImage').attr('src', '');
+	        }
+	    });
+	}
+
+	$(document).ready(function() {
+	    // 정보 변경 버튼 클릭 시 모달 열기
+	    $('#openModalBtn').click(function() {
+	        $('#staticBackdrop').modal('show');
+	    });
+
+	    // 비밀번호 확인 버튼 클릭 시
+	    $('#verifyBtn').click(function() {
+	        const password = $('#confirmPw').val();
+
+	        // 비밀번호 인증 요청
+	        $.ajax({
+	            url: '/sep/a001/employee/mypage/verifyPassword', // 비밀번호 검증 URL
+	            type: 'POST',
+	            contentType: 'application/json',
+	            data: JSON.stringify({ empPw: password }), // 비밀번호 전달
+	            success: function() {
+	                // 인증 성공 시 정보변경 탭 보여주기
+	                $('#profile2-edit').addClass('show active');
+	                $('#profile2-overview').removeClass('show active');
+	                $('#staticBackdrop').modal('hide'); // 모달 닫기
+	            },
+	            error: function() {
+	                // 인증 실패 시 오류 메시지 표시
+	                $('#pwErrorCk').text('비밀번호가 올바르지 않습니다.');
+	            }
+	        });
+	    });
+	});
+
+
+

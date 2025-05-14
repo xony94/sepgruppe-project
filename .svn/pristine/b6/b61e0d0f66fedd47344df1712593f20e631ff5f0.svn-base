@@ -1,0 +1,49 @@
+/**
+ * 
+ */
+
+document.addEventListener("DOMContentLoaded", function(){
+	const $seacrhForm = $("#search-form");
+	const $seacrhUi = $("#search-ui");
+	const $searchBtn = $("#search-btn");
+	
+	$seacrhForm.find(":input[data-init-value]").each(function(idx, input){
+		let initValue = input.dataset.initValue;
+		$(input).val(initValue);
+	});
+	$seacrhUi.find(":input[data-init-value]").each(function(idx, input){
+		let initValue = input.dataset.initValue;
+		$(input).val(initValue);
+	});
+	
+	fnPaging = function(page){
+	//	location.href="?page="+page;
+		$seacrhForm.find("[name='page']").val(page);
+		$seacrhForm.submit();
+	}
+	
+	$searchBtn.on("click", function(){
+		let $searchUi = $(this).parents("#search-ui");
+		$searchUi.find(":input[name]").each(function(idx, input){
+			let name = input.name;
+			let value = $(input).val();
+			$seacrhForm.find(`[name='${name}']`).val(value);
+		}); // each end
+		$seacrhForm.submit();
+	});
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

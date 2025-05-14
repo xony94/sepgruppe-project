@@ -1,0 +1,88 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 21.     	JSW            최초 생성
+ *
+ * </pre>
+ */
+function showOrganizationPopup() {
+  // 더미 데이터
+  const dummyData = [
+    {
+      name: "SEP",
+      children: [
+        {
+          name: "한로로",
+          position: "차장",
+          children: [
+            {
+              name: "김대우",
+              position: "과장",
+              children: []
+            },
+            {
+              name: "홈루피",
+              position: "주임",
+              children: []
+            }
+          ]
+        },
+        {
+          name: "김나박",
+          position: "연구원",
+          children: [
+            {
+              name: "나박이",
+              position: "연구원",
+              children: []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      name: "홀길동",
+      position: "팀장",
+      children: [
+        {
+          name: "한크롱",
+          position: "대리",
+          children: []
+        }
+      ]
+    }
+  ];
+
+  const organizationTree = document.getElementById('organizationTree');
+  organizationTree.innerHTML = ''; // 기존 내용 초기화
+
+  // 트리 구조 생성
+  const tree = createTree(dummyData);
+  organizationTree.appendChild(tree);
+
+  // 팝업창 표시
+  document.getElementById('organizationPopup').style.display = 'block';
+}
+
+function createTree(data) {
+  const ul = document.createElement('ul');
+  data.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = `${item.name} (${item.position})`;
+
+    if (item.children && item.children.length > 0) {
+      const childTree = createTree(item.children);
+      li.appendChild(childTree);
+    }
+
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+function closeOrganizationPopup() {
+  document.getElementById('organizationPopup').style.display = 'none';
+}

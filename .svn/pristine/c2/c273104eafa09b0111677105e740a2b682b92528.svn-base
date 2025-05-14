@@ -1,0 +1,41 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 20.     	JYS            최초 생성
+ *
+ * </pre>
+ */
+// DOMContentLoaded 이벤트가 발생하면 실행
+document.addEventListener("DOMContentLoaded", () => {
+	const apprModal = document.querySelector('#newApprModal');
+	const basePath = window.location.pathname.split("/").slice(0, -1).join("/");
+	
+    // 결재 양식 전체 조회
+    apprModal.addEventListener('show.bs.modal', async () => {
+		$("#tree").fancytree({
+			source: {
+			    url: `${basePath}/appr/parentFolder`,
+			    cache: false
+			},
+			lazyLoad: function(event, data){
+		        var node = data.node;
+				let mode = "document";
+				if(!node.data.parentDocFolder){
+					mode = "folder"
+				}
+		        // Load child nodes via Ajax GET /getTreeData?mode=children&parent=1234
+		        data.result = {
+		          url: `${basePath}/appr/childrenFolder`,
+		          data: {mode: mode, parent: node.key},
+		          cache: false
+		        };
+	    	}
+		});
+    });
+	
+	
+});
+

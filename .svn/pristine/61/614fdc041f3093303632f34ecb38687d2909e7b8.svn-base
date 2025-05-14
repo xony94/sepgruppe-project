@@ -1,0 +1,44 @@
+package kr.or.ddit.works.organization.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.works.mybatis.mappers.DepartmentMapper;
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+
+/**
+ * 
+ * @author JSW
+ * @since 2025. 3. 31.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 31.     	JSW	          최초 생성
+ *
+ * </pre>
+ */
+@Service
+public class DepartmentServiceImpl implements DepartmentService {
+	
+	@Autowired
+	private DepartmentMapper mapper;
+	
+	@Override
+	public int addDepartment(DepartmentVO dept) {
+		return mapper.insertDepartment(dept);
+	}
+
+	@Override
+	public int deleteDepartment(String companyNo, String deptCd) {
+		return mapper.deleteDepartment(companyNo, deptCd);
+	}
+
+	@Override
+	public int updateDepartmentField(DepartmentVO dept) {
+		return mapper.updateDepartmentField(dept);
+	}
+}

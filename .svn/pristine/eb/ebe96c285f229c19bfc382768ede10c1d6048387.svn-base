@@ -1,0 +1,85 @@
+package kr.or.ddit.works.community.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.works.community.vo.CommunityVO;
+import kr.or.ddit.works.mybatis.mappers.CommunityMapper;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class CommunityServiceImpl implements CommunityServcie {
+
+	@Autowired
+	private CommunityMapper mapper;
+
+	@Override
+	public List<CommunityVO> memberCommunityList(String empId) {
+		return mapper.memberCommunityList(empId);
+	}
+
+	@Override
+	public List<CommunityVO> communityMember(Long communityNo) {
+		log.info("==============================서비스 코드 {}",mapper.communityMember(communityNo));
+		return mapper.communityMember(communityNo);
+	}
+
+	@Override
+	public List<CommunityVO> communityList(String empId) {
+		return mapper.communityList(empId);
+	}
+
+	@Override
+	public List<CommunityVO> boardList(Long communityNo) {
+		return mapper.boardList(communityNo);
+	}
+
+	@Override
+	public List<CommunityVO> boardNoList(Long boardNo) {
+		return mapper.boardNoList(boardNo);
+	}
+
+	@Override
+	@Transactional
+	public void insertCommunity(Map<String, Object> roomData, Map<String, Object> roomMemberData, Map<String, Object> roomJoinData) {
+
+		// COMMUNITY NO 생성
+		Long communityNo = mapper.communityNo()+1;
+
+		// REQUEST NO 생성
+		Long requestNo = mapper.requestNo()+1;
+
+		// COMMUNITY 테이블에 INSERT
+		roomData.put("communityNo", communityNo);
+		mapper.insertRoom(roomData);
+
+		// JOIN_STATUS 테이블에 INSERT
+		roomJoinData.put("communityNo", communityNo);
+		roomJoinData.put("requestNo", requestNo);
+		mapper.insertStatusMember(roomJoinData);
+
+		// COMMUNITY_MEMBER 테이블에 INSERT
+		roomMemberData.put("communityNo", communityNo);
+		roomMemberData.put("requestNo", requestNo);
+		mapper.insertRoomMember(roomMemberData);
+
+	}
+
+	@Override
+	public int insertBoard(Map<String, Object> communityData) {
+		return mapper.insertBoard(communityData);
+	}
+
+	@Override
+	public CommunityVO selectPostDetail(Long postNo) {
+		return mapper.selectPostDetail(postNo);
+	}
+	}
+
+

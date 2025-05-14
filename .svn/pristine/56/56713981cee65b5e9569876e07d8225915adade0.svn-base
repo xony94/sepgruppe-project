@@ -1,0 +1,36 @@
+package kr.or.ddit.works.chat.vo;
+
+import java.io.Serializable;
+
+import kr.or.ddit.works.organization.vo.EmployeeVO;
+import lombok.Data;
+
+/**
+ * 채팅 CHAT VO
+ * @author JYS
+ * @since 2025. 3. 14.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 14.     	JYS	          최초 생성
+ *
+ * </pre>
+ */
+@Data
+public class ChatRoomUserVO implements Serializable{
+	
+	private String userId;  
+	private String roomId;
+	private String empId;
+	private String joinTime;
+	private String role;
+
+	private EmployeeVO employee;
+	private ChatRoomVO chatRoom;
+	
+	
+}

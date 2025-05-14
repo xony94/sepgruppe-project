@@ -1,0 +1,37 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 4. 7.     	KMJ            최초 생성
+ *
+ * </pre>
+ */
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.favorite-icon').forEach(function (icon) {
+        icon.addEventListener('click', function () {
+            const mailId = this.getAttribute('data-mail-id');
+            const isFavorite = this.classList.contains('fa-solid');
+
+            fetch('/updateFavorite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mailId: mailId, favorite: !isFavorite })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 클래스 토글
+                    this.classList.toggle('fa-solid');
+                    this.classList.toggle('fa-regular');
+                    this.classList.toggle('text-warning');
+                }
+            });
+        });
+    });
+});
+

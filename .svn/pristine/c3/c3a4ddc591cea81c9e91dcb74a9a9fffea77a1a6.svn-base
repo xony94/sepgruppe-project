@@ -1,0 +1,88 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 19.     	KKM            최초 생성
+ *  2025. 4.  2.     	SJH           수정 중
+ * </pre>
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'resourceTimeGrid', // Resource Timeline View 설정
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        resources: [
+            { id: 'a', title: '회의실 A' },
+            { id: 'b', title: '회의실 B' },
+            { id: 'c', title: '회의실 C' }
+        ],
+        events: function(fetchInfo, successCallback) {
+            $.ajax({
+                url: '/${companyNo}/reservation/api/status/' + new Date().toISOString().split('T')[0],
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    const events = data.map(reservation => {
+                        return {
+                            title: reservation.reservationContent,
+                            start: reservation.reservationStartTime,
+                            end: reservation.reservationEndTime,
+                            resourceId: reservation.roomNo // 회의실 번호에 맞춰 리소스 ID 설정
+                        };
+                    });
+                    successCallback(events);
+                },
+                error: function() {
+                    console.error("Error fetching events");
+                }
+            });
+        },
+        slotDuration: '00:30:00',
+        resourceAreaHeaderContent: '회의실',
+        eventClick: function(info) {
+            alert('예약 상세: ' + info.event.title);
+        },
+        slotClick: function(info) {
+            openReservationModal(info.date); // 클릭한 시간에 맞춰 모달 열기
+        }
+    });
+
+    calendar.render();
+});
+
+// 예약 추가 모달 열기
+function openReservationModalFromCalendar(date) {
+	$('#reservationModal').modal('show');
+	document.getElementById('reservationStartTime').value = date.toISOString().substring(0, 16); // 클릭한 시간으로 시작 시간 설정
+	document.getElementById('reservationEndTime').value = date.toISOString().substring(0, 16); // 클릭한 시간으로 종료 시간 설정
+	document.getElementById('roomNo').value = ''; // 회의실 번호 초기화
+	document.getElementById('empId').value = ''; // 사원 ID 초기화
+}
+
+// 테이블에서 예약 클릭 시 호출
+function openReservationModal(companyNo, roomNo, hour) {
+    if (!roomNo || !hour) {
+        alert("회의실 번호 또는 시간이 유효하지 않습니다.");
+        return;
+    }
+
+    const timeFormatted = (hour < 10 ? "0" : "") + hour + ":00";
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    console.log("📌 openReservationModal:", companyNo, roomNo, timeFormatted);
+
+    fetch(`${pageContext.request.contextPath}/${companyNo}/reservation/new?roomNo=${roomNo}&time=${timeFormatted}&date=${currentDate}`)
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById("modalBody").innerHTML = data;
+            $('#reservationModal').modal('show');
+        })
+        .catch(error => console.error('Error:', error));
+}

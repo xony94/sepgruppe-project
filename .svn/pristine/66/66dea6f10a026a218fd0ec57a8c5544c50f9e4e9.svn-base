@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.works.mybatis.mappers.OrganizationMapper">
+	
+	<select id="selectParentDep" resultType="DepartmentVO">
+		SELECT
+		    dept_cd
+		  , parent_dept_cd
+		  , dept_name
+		  , manager_emp_no
+		  , create_at
+		  , company_no
+		FROM
+		    department
+		WHERE PARENT_DEPT_CD IS NULL
+	</select>
+	
+	<select id="selectChildDep" parameterType="string" resultType="DepartmentVO">
+		SELECT
+		    dept_cd
+		  , parent_dept_cd
+		  , dept_name
+		  , manager_emp_no
+		  , create_at
+		  , company_no
+		FROM
+		    department
+		WHERE PARENT_DEPT_CD = #{deptCd}
+	</select>
+	
+	<select id="selectEmployee" parameterType="string" resultType="EmployeeVO">
+		SELECT
+		    emp_id
+		  , company_no
+		  , position_cd
+		  , dept_cd
+		  , emp_no
+		  , emp_nm
+		  , emp_pw
+		  , emp_zip
+		  , emp_add1
+		  , emp_add2
+		  , emp_email
+		  , emp_phone
+		  , emp_regdate
+		  , emp_retire
+		  , emp_img
+		  , emp_bank
+		  , emp_depositor
+		  , emp_bankno
+		  , emp_gender
+		FROM
+		    employee
+		WHERE 
+		    dept_cd=#{deptCd}
+	</select>
+</mapper>

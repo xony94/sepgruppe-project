@@ -1,0 +1,36 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 19.     	KKM            최초 생성
+ *
+ * </pre>
+ */
+
+function changeDate(direction) {
+    const currentDateElement = document.getElementById("currentDate");
+    const currentDateParts = currentDateElement.innerText.split(" (");
+    const currentDate = new Date(currentDateParts[0]); // "2025-03-19" 부분을 Date로 변환
+
+    currentDate.setDate(currentDate.getDate() + direction);
+    const newDateFormatted = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+
+    // 요일 계산
+    const options = { weekday: 'short', year: 'numeric', month: 'numeric', day: 'numeric' };
+    const newDayFormatted = new Intl.DateTimeFormat('ko-KR', options).format(currentDate).split(" ")[0]; // 요일 추출
+
+    // 날짜 업데이트
+    currentDateElement.innerText = `${newDateFormatted} (${newDayFormatted})`;
+}
+
+
+function updateReservationTable(data) {
+    // 예약 테이블 업데이트 로직 구현
+}
+
+function getDayOfWeek(date) {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    return days[date.getDay()];
+}

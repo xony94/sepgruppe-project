@@ -1,0 +1,272 @@
+/**
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   수정일              수정자           수정내용
+ *  -----------    -------------    ---------------------------
+ * 2025. 3. 29.      SHJ            기간별 필터링 + 날짜 범위 표시 (빈 날짜 0 처리)
+ *                                  groupSubscriptionsByDay() 함수 추가
+ *
+ * 선택된 기간(1주일, 1개월, 3개월, 6개월) 동안의 날짜를 모두 X축에 표시하고,
+ * 데이터가 없는 날은 0으로 처리하여 차트를 그립니다.
+ * </pre>
+ */
+document.addEventListener("DOMContentLoaded", function() {
+    /* ====================================================
+       1. 매출 차트 (paymentChart)
+       ==================================================== */
+    const paymentChartEl = document.getElementById('paymentChart');
+    const paymentList = JSON.parse(paymentChartEl.getAttribute("data-payment-list"));
+    
+    // 초기 기간: 1개월
+    const initialRange = '1month';
+    const { fromDate: payFromDate, toDate: payToDate, filtered: payFiltered } = filterPayments(paymentList, initialRange);
+    const payAggregated = groupPaymentsByDay(payFiltered, payFromDate, payToDate);
+    
+    const paymentChart = new Chart(paymentChartEl.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: payAggregated.labels,
+            datasets: [{
+                label: '매출 현황',
+                data: payAggregated.salesData,
+                fill: false,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: { display: true, text: '날짜' }
+                },
+                y: {
+                    beginAtZero: true,
+                    display: true,
+                    title: { display: true, text: '매출액' }
+                }
+            }
+        }
+    });
+    
+    /* ====================================================
+       2. 구독 차트 (라인 및 도넛)
+       ==================================================== */
+    // activeLineChart와 activeDonutChart 모두 같은 구독 데이터를 사용하도록 data-subscription-list 속성에 넣음
+    const subscriptionDataJson = document.getElementById("activeLineChart").getAttribute("data-subscription-list");
+    const subscriptionList = JSON.parse(subscriptionDataJson);
+    
+    // 활성 구독 필터링 (subscriptionsActive가 'Y'인 경우)
+    // 여기서는 subscriptionsActive 값이 'Y'일 때 활성이라고 가정 (조건은 실제 DB 데이터에 맞게 조정)
+    const activeSubscriptions = subscriptionList.filter(item => item.subscriptionsActive === null);
+    
+    // 초기 기간: 1개월
+    const { fromDate: subFromDate, toDate: subToDate, filtered: subFiltered } = filterSubscriptions(activeSubscriptions, initialRange);
+    const subAggregated = groupSubscriptionsByDay(subFiltered, subFromDate, subToDate);
+    
+    // 구독 라인 차트 (activeLineChart)
+    const subscriptionLineChart = new Chart(document.getElementById("activeLineChart").getContext("2d"), {
+        type: 'line',
+        data: {
+            labels: subAggregated.labels,
+            datasets: [{
+                label: "날짜별 활성 구독 수",
+                data: subAggregated.salesData,
+                fill: false,
+                borderColor: "rgba(75, 192, 192, 1)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                borderWidth: 2,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: "날짜" } },
+                y: { beginAtZero: true, title: { display: true, text: "구독 수" } }
+            }
+        }
+    });
+    
+    // 구독 도넛 차트 (activeDonutChart): 플랜 유형별 집계
+    const donutDataMap = activeSubscriptions.reduce((acc, cur) => {
+        const type = cur.planType || '기타';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+    }, {});
+    const donutLabels = Object.keys(donutDataMap);
+    const donutCounts = donutLabels.map(type => donutDataMap[type]);
+    
+    const activeDonutChart = new Chart(document.getElementById("activeDonutChart").getContext("2d"), {
+        type: 'doughnut',
+        data: {
+            labels: donutLabels,
+            datasets: [{
+                label: "플랜 유형별 활성 구독",
+                data: donutCounts,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+    
+    /* ====================================================
+       3. 업데이트 함수 및 버튼 이벤트
+       ==================================================== */
+    function updatePaymentChart(range) {
+        const { fromDate, toDate, filtered } = filterPayments(paymentList, range);
+        const aggregated = groupPaymentsByDay(filtered, fromDate, toDate);
+        paymentChart.data.labels = aggregated.labels;
+        paymentChart.data.datasets[0].data = aggregated.salesData;
+        paymentChart.update();
+    }
+    
+    function updateSubscriptionLineChart(range) {
+        const { fromDate, toDate, filtered } = filterSubscriptions(activeSubscriptions, range);
+        const aggregated = groupSubscriptionsByDay(filtered, fromDate, toDate);
+        subscriptionLineChart.data.labels = aggregated.labels;
+        subscriptionLineChart.data.datasets[0].data = aggregated.salesData;
+        subscriptionLineChart.update();
+    }
+    
+    // 버튼 이벤트 등록 (두 차트를 동시에 업데이트)
+    const btn1Week   = document.getElementById('btn1Week');
+    const btn1Month  = document.getElementById('btn1Month');
+    const btn3Months = document.getElementById('btn3Months');
+    const btn6Months = document.getElementById('btn6Months');
+    
+    if (btn1Week) {
+        btn1Week.addEventListener('click', () => {
+            updatePaymentChart('1week');
+            updateSubscriptionLineChart('1week');
+        });
+    }
+    if (btn1Month) {
+        btn1Month.addEventListener('click', () => {
+            updatePaymentChart('1month');
+            updateSubscriptionLineChart('1month');
+        });
+    }
+    if (btn3Months) {
+        btn3Months.addEventListener('click', () => {
+            updatePaymentChart('3months');
+            updateSubscriptionLineChart('3months');
+        });
+    }
+    if (btn6Months) {
+        btn6Months.addEventListener('click', () => {
+            updatePaymentChart('6months');
+            updateSubscriptionLineChart('6months');
+        });
+    }
+    
+    /* ====================================================
+       4. 공통 유틸리티 함수
+       ==================================================== */
+    
+    // 매출 데이터 필터링: paymentDate 기준
+    function filterPayments(list, range) {
+        const now = new Date();
+        let fromDate = new Date();
+        switch (range) {
+            case '1week':   fromDate.setDate(now.getDate() - 7); break;
+            case '1month':  fromDate.setMonth(now.getMonth() - 1); break;
+            case '3months': fromDate.setMonth(now.getMonth() - 3); break;
+            case '6months': fromDate.setMonth(now.getMonth() - 6); break;
+            default:        fromDate = new Date(0);
+        }
+        const filtered = list.filter(item => {
+            const itemDate = new Date(item.paymentDate);
+            return itemDate >= fromDate && itemDate <= now;
+        });
+        return { fromDate, toDate: now, filtered };
+    }
+    
+    // 구독 데이터 필터링: subscriptionStart 기준
+    function filterSubscriptions(list, range) {
+        const now = new Date();
+        let fromDate = new Date();
+        switch (range) {
+            case '1week':   fromDate.setDate(now.getDate() - 7); break;
+            case '1month':  fromDate.setMonth(now.getMonth() - 1); break;
+            case '3months': fromDate.setMonth(now.getMonth() - 3); break;
+            case '6months': fromDate.setMonth(now.getMonth() - 6); break;
+            default:        fromDate = new Date(0);
+        }
+        const filtered = list.filter(item => {
+            if (!item.subscriptionStart) return false;
+            const itemDate = new Date(item.subscriptionStart);
+            return itemDate >= fromDate && itemDate <= now;
+        });
+        return { fromDate, toDate: now, filtered };
+    }
+    
+    // 날짜별 집계 (매출용 공용 함수)
+    function groupPaymentsByDay(list, fromDate, toDate) {
+        const grouped = {};
+        list.forEach(item => {
+            // paymentList에는 paymentDate, 구독 데이터에는 subscriptionStart가 존재함
+            const dateStr = (item.paymentDate || item.subscriptionStart).substring(0, 10);
+            if (!grouped[dateStr]) {
+                grouped[dateStr] = 0;
+            }
+            // 매출 데이터: item.paymentAmount, 구독 데이터: 1건씩 카운트
+            grouped[dateStr] += (item.paymentAmount !== undefined ? item.paymentAmount : 1);
+        });
+        
+        // fromDate부터 toDate까지 모든 날짜를 생성 (없으면 0)
+        const labels = [];
+        let current = new Date(fromDate);
+        while (current <= toDate) {
+            labels.push(formatDate(current));
+            current.setDate(current.getDate() + 1);
+        }
+        const salesData = labels.map(dateStr => grouped[dateStr] || 0);
+        return { labels, salesData };
+    }
+    
+    // 구독 데이터 전용 집계 함수 (subscriptionStart만 사용)
+    function groupSubscriptionsByDay(list, fromDate, toDate) {
+        const grouped = {};
+        list.forEach(item => {
+            const dateStr = item.subscriptionStart.substring(0, 10);
+            if (!grouped[dateStr]) {
+                grouped[dateStr] = 0;
+            }
+            grouped[dateStr] += 1;
+        });
+        const labels = [];
+        let current = new Date(fromDate);
+        while (current <= toDate) {
+            labels.push(formatDate(current));
+            current.setDate(current.getDate() + 1);
+        }
+        const salesData = labels.map(dateStr => grouped[dateStr] || 0);
+        return { labels, salesData };
+    }
+    
+    // 날짜 포맷 변환: Date 객체를 "YYYY-MM-DD" 문자열로 변환
+    function formatDate(dateObj) {
+        const yyyy = dateObj.getFullYear();
+        let mm = dateObj.getMonth() + 1;
+        let dd = dateObj.getDate();
+        if (mm < 10) mm = '0' + mm;
+        if (dd < 10) dd = '0' + dd;
+        return `${yyyy}-${mm}-${dd}`;
+    }
+});

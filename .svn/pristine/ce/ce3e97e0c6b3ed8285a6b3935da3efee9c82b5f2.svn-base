@@ -1,0 +1,88 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 4. 9.     	SJH            최초 생성
+ *
+ * </pre>
+ */
+@charset "UTF-8";
+
+/* 주소록 등록 폼 스타일 */
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
+    color: #212529;
+}
+
+.address-form-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 60px 20px;
+}
+
+.address-form-container {
+    background-color: #fff;
+    width: 100%;
+    max-width: 860px;
+    padding: 50px 60px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0d6efd;
+    margin-bottom: 30px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    outline: none;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.d-flex {
+    margin-top: 30px;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 10px 26px;
+    font-weight: 600;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+}
+
+.btn-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}

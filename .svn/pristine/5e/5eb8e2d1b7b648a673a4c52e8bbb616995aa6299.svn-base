@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.works.mybatis.mappers.PositionMapper">
+	<select id="selectPositionList" resultType="PositionVO">
+		SELECT
+		    position_cd
+		  , position_name
+		FROM
+		    position
+	</select>
+	
+	<select id="selectPositionName" parameterType="String" resultType="String">
+		SELECT
+		 	position_name
+		FROM
+		    position
+		WHERE 
+			position_cd = #{positionCd}
+	</select>
+</mapper>

@@ -1,0 +1,77 @@
+package kr.or.ddit.works.survey.api;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.works.survey.vo.SurveyResponseVO;
+import kr.or.ddit.works.survey.vo.SurveyVO;
+
+/**
+ * 
+ * @author SJH
+ * @since 2025. 3. 24.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 24.     	SJH	          최초 생성
+ *
+ * </pre>
+ */
+@Service
+public class SurveyApiServiceImpl implements SurveyApiService {
+
+    private static final String API_BASE = "https://api.surveymonkey.com/v3";
+    
+    // 🔐 절대로 프론트엔드에서 노출되지 않도록 서버 내에서만 사용!
+    private static final String ACCESS_TOKEN = "LXs5ovMHyr4wSkLSS8XATbigcAhdK2MRdFnrpPtm8HGc0Z7yFQ6pzAMtSeY1swdDNxsOHhfU0xmu7yvo-m5Irkc0s6ZJsoYnhkAc-w22lNM6EcI7mxUD9p0MD-7owmfv";
+
+    @Override
+    public String createSurvey(String jsonBody) throws Exception {
+        String url = API_BASE + "/surveys";
+
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            HttpPost post = new HttpPost(url);
+            post.setHeader("Authorization", "Bearer " + ACCESS_TOKEN);
+            post.setHeader("Content-Type", "application/json");
+            post.setEntity(new StringEntity(jsonBody, "UTF-8"));
+
+            try (CloseableHttpResponse response = client.execute(post)) {
+                int status = response.getStatusLine().getStatusCode();
+                String responseBody = EntityUtils.toString(response.getEntity(), "UTF-8");
+
+                if (status >= 200 && status < 300) {
+                    return responseBody;
+                } else {
+                    throw new RuntimeException("설문 생성 API 호출 실패: " + status + "\n" + responseBody);
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean createSurveyOnApi(SurveyVO surveyVO) {
+        // 추후 확장용 - 현재 미사용
+        return false;
+    }
+
+    @Override
+    public SurveyVO getSurveyDetailsFromApi(String surveyId) {
+        // 추후 확장용 - 현재 미사용
+        return null;
+    }
+
+    @Override
+    public boolean submitSurveyResponseToApi(String surveyId, SurveyResponseVO responseVO) {
+        // 추후 확장용 - 현재 미사용
+        return false;
+    }
+}

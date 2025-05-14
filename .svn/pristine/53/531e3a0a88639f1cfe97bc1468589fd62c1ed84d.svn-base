@@ -1,0 +1,101 @@
+package kr.or.ddit.works.reservation.service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.works.mybatis.mappers.ReservationMapper;
+import kr.or.ddit.works.reservation.vo.ReservationVO;
+
+/**
+ * 예약 서비스 임플
+ * 
+ * @author KKM
+ * @since 2025. 3. 14.
+ * @see
+ *
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ *  2025. 3. 14.     	KKM	          최초 생성
+ * </pre>
+ */
+@Service
+public class ReservationServiceImpl implements ReservationService {
+
+    @Autowired
+    private ReservationMapper reservationMapper; // 매퍼 주입
+
+    @Override
+    public List<ReservationVO> selectListAllReservation() {
+        return reservationMapper.selectListAllReservation(); // 매퍼를 통해 전체 예약 조회
+    }
+
+    @Override
+    public ReservationVO selectReservationDetail(String reservationNo) {
+        return reservationMapper.selectReservationDetail(reservationNo); // 매퍼를 통해 예약 상세 조회
+    }
+
+    @Override
+    public boolean insertReservation(ReservationVO reservation) {
+        // 예약 충돌 검사
+        List<ReservationVO> existingReservations = selectListAllReservation();
+        for (ReservationVO existing : existingReservations) {
+            if (existing.getRoomNo() == reservation.getRoomNo() &&
+                existing.getReservationDate().equals(reservation.getReservationDate()) && // 예약일 비교
+                existing.getReservationStartTime().before(reservation.getReservationEndTime()) &&
+                existing.getReservationEndTime().after(reservation.getReservationStartTime())) {
+                return false; // 충돌 발생
+            }
+        }
+        return reservationMapper.insertReservation(reservation) > 0; // 매퍼를 통해 예약 추가
+    }
+
+    @Override
+    public boolean updateReservation(ReservationVO reservation) {
+        return reservationMapper.updateReservation(reservation) > 0; // 매퍼를 통해 예약 수정
+    }
+
+    @Override
+    public boolean deleteReservation(String reservationNo) {
+        return reservationMapper.deleteReservation(reservationNo) > 0; // 매퍼를 통해 예약 삭제
+    }
+
+    @Override
+    public List<ReservationVO> getReservationsByDate(LocalDate reservationDate) {
+        return reservationMapper.selectReservationsByDate(reservationDate); // 변경
+    }
+    
+    @Override
+    public List<ReservationVO> getReservationsByDateGrouped(LocalDate reservationDate) {
+        List<ReservationVO> reservations = reservationMapper.selectReservationsByDate(reservationDate);
+        List<ReservationVO> groupedReservations = new ArrayList<>();
+
+        // 시간대별로 회의실 예약 현황 정리
+        for (int hour = 9; hour <= 20; hour++) { // 09:00부터 20:00까지
+            for (ReservationVO reservation : reservations) {
+                LocalDateTime startTime = reservation.getReservationStartTime().toLocalDateTime();
+                LocalDateTime endTime = reservation.getReservationEndTime().toLocalDateTime();
+
+                // 예약 시간이 해당 시간대에 포함되는지 확인
+                if (startTime.getHour() <= hour && endTime.getHour() > hour) {
+                    groupedReservations.add(reservation); // 시간대에 포함된 예약 추가
+                    break; // 이미 추가했으므로 다음 시간대로 이동
+                }
+            }
+        }
+
+        return groupedReservations; // 그룹화된 예약 리스트 반환
+    }
+    
+    @Override
+    public List<ReservationVO> getMyReservationsByEmpId(String empId) {
+        return reservationMapper.getMyReservationsByEmpId(empId);
+    }
+}

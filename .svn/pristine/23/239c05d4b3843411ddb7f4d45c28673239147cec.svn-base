@@ -1,0 +1,71 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 24.     	KMJ            최초 생성
+ *
+ * </pre>
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    let calendarEl = document.getElementById('calendar');
+
+	let companyNo = "${companyNo}";
+	let contextPath ="${pageContext.request.contextPath}";
+
+	let clist = [];
+
+	fetch(`${pageContext.request.contextPath}/{companyNo}/groupware`)
+	  .then(response => response.json())
+	  .then(data => {
+	    clist = data.map((schedule, index) => ({
+	      title: schedule.schdlCn,
+	      start: schedule.schdlBgngYmd,
+	      end: schedule.schdlEndYmd,
+	      schdlNm: schedule.schdlNm,
+	      schdlCn: schedule.schdlCn,
+	      schdlLocation: schedule.schdlLocation,
+	      createDate: schedule.schdlCreateDate,
+	      schdlStatus: schedule.schdlStatus,
+	      url: `${pageContext.request.contextPath}/{companyNo}/groupware?what=${schedule.schdlNo}`,
+	      groupId: index.toString(),
+	    }));
+	    console.log(clist); // 디버깅용
+	  })
+	  .catch(error => console.error("Error fetching schedule:", error));
+	  
+    // FullCalendar 생성
+    let calendar = new FullCalendar.Calendar(calendarEl, {
+        plugins: [ FullCalendar.Interaction.default ],
+        initialView: 'listWeek',
+        locale: 'ko',
+        editable: true,
+        droppable: true,
+        events: clist,
+        eventClick: function(info) {
+            let eventUrl = info.event.url;
+            info.jsEvent.preventDefault();
+
+            if (eventUrl) {
+                $.ajax({
+                    url: eventUrl,
+                    type: "GET",
+                    dataType: "html",
+                    success: function(detail) {
+                        console.log("==================================================dsfksdjfk");
+                        console.log(detail);
+                        $("#scheduleModal .modal-body").html(detail);
+                        $("#scheduleModal").modal("show");
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX 오류:", status, error);
+                        alert("일정 상세 정보를 불러오는 데 실패했습니다.");
+                    }
+                });
+            }
+        }
+    });
+
+    calendar.render();
+});

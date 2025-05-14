@@ -1,0 +1,131 @@
+package kr.or.ddit.works.approval.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.works.approval.service.ApprDocService;
+import kr.or.ddit.works.approval.vo.DocFormVO;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
+@Controller
+@RequestMapping("/{companyNo}/approval")
+public class ApprDocController {
+	
+	@Autowired
+	private ApprDocService apprDocService;
+	
+	/**
+	 * 전체 결재 양식 조회
+	 * @param companyNo
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("")
+	public String selectListAllDocForm(
+		@Param("companyNo")String companyNo
+		, Model model
+	) {
+		model.addAttribute("companyNo", companyNo);
+		return "";
+	}
+	
+	/**
+	 * 문서 양식 번호(docFormNo)를 이용하여 해당 문서의 저장된 파일 경로를 반환하는 메서드
+	 *
+	 * @param docFormNo 문서 양식 번호 (문서의 식별자)
+	 * @return 파일 경로가 존재하면 HTTP 200 OK와 경로를 반환, 
+	 *         문서 또는 파일이 없으면 HTTP 404 Not Found 반환
+	 */
+	@GetMapping("/loadDoc")
+	public ResponseEntity<String> getFilePath(@RequestParam("docFormNo") String docFormNo) {
+		 // 문서 양식 번호(docFormNo)를 기반으로 문서 상세 정보를 조회
+	    DocFormVO docDetail = apprDocService.selectdocFrmDeatil(docFormNo);
+
+	    // 문서 정보가 없거나, 첨부 파일 정보가 없는 경우 404 Not Found 응답 반환
+	    if (docDetail == null || docDetail.getAttachFileVo() == null) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	                .body("문서 양식을 찾을 수 없습니다.");
+	    }
+
+	    // 첨부 파일의 저장 경로 가져오기
+	    String filePath = docDetail.getAttachFileVo().getAttachFilePath();
+
+	    // 파일 경로가 존재하면 200 OK 응답과 함께 경로 반환
+	    if (filePath != null) {
+	        return ResponseEntity.ok(filePath);
+	    }
+
+	    // 파일 경로가 없는 경우 404 Not Found 응답 반환
+	    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	            .body("파일 경로를 찾을 수 없습니다.");    
+	}
+
+
+	@GetMapping("/new")
+	public String insertApprDocFormUI(
+		@PathVariable("companyNo")String companyNo,
+		Model model
+	) {
+		model.addAttribute("companyNo",companyNo);
+		
+		return "gw:appr/apprForm";
+	}
+	
+	/**
+	 * 
+	 * @param companyNo
+	 * @param docFrmName
+	 * @param model
+	 * @return
+	 */
+	@PostMapping("")
+	public String selectListSearchDocForm(
+		@Param("companyNo")String companyNo
+		, @Param("docFrmName") String docFrmName
+		, Model model
+	) {
+		model.addAttribute("companyNo", companyNo);
+		model.addAttribute("docFrmName", docFrmName);
+		
+		return "";
+	}
+	
+	/**
+	 * 문서 상세 조회
+	 * @param docFrmNo
+	 * @param model
+	 */
+	@GetMapping("detail")
+	@ResponseBody
+	public ResponseEntity<Map<String, String>> selectdocFrmDeatil(@RequestParam("docFrmNo") String docFrmNo) {
+        DocFormVO formDetail = apprDocService.selectdocFrmDeatil(docFrmNo);
+
+        if (formDetail == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        String docFrmContent = formDetail.getDocFrmContent();
+
+        Map<String, String> response = new HashMap();
+        response.put("docFrmContent", docFrmContent);
+
+        return ResponseEntity.ok(response);
+    }
+	
+	
+
+}

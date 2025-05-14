@@ -1,0 +1,305 @@
+package kr.or.ddit.works.mail.service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.stereotype.Service;
+
+import com.google.api.services.gmail.Gmail;
+import com.google.api.services.gmail.model.ListMessagesResponse;
+import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.MessagePart;
+import com.google.api.services.gmail.model.MessagePartHeader;
+
+import kr.or.ddit.works.mail.config.GMailConfig;
+import kr.or.ddit.works.mail.exception.NeedOAuthRedirectException;
+import kr.or.ddit.works.mail.vo.MailReceptionVO;
+import kr.or.ddit.works.mail.vo.MailSentLogVO;
+import kr.or.ddit.works.mail.vo.MailUserAuthVO;
+import kr.or.ddit.works.mybatis.mappers.MailMapper;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class MailServiceImpl implements MailService {
+
+    @Autowired
+    private MailMapper mailMapper;
+
+    @Lazy
+    @Autowired
+    private GMailConfig mailConfig;
+
+    @Override
+    public void getMailList(String userId) throws Exception {
+        Gmail service = mailConfig.getGmailService(userId);
+        ListMessagesResponse response = service.users().messages().list("me").setMaxResults(10L).execute();
+        List<Message> messages = response.getMessages();
+        List<MailReceptionVO> gmailMessageList = new ArrayList<>();
+
+        if (messages != null) {
+            for (Message message : messages) {
+                Message fullMessage = service.users().messages().get("me", message.getId()).execute();
+                MailReceptionVO vo = new MailReceptionVO();
+                vo.setEmpId(userId);
+                vo.setMailId(message.getId());
+
+                for (MessagePartHeader header : fullMessage.getPayload().getHeaders()) {
+                    switch (header.getName()) {
+                        case "Subject": vo.setMailSubject(header.getValue()); break;
+                        case "From": vo.setFromEmail(header.getValue()); break;
+                        case "Date": 
+                        	try {
+                                String dateStr = header.getValue(); // "Wed, 09 Apr 2025 07:17:23 GMT"
+                                dateStr = dateStr.replaceAll("\\s*\\(.*\\)$", "").trim();
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+                                ZonedDateTime zdt = ZonedDateTime.parse(dateStr, formatter);
+                                Timestamp timestamp = Timestamp.from(zdt.toInstant());
+                                vo.setMailDate(timestamp);
+                            } catch (DateTimeParseException e) {
+                                log.warn("날짜 파싱 실패: {}", header.getValue(), e);
+                            }
+                            break;
+                    }
+                }
+                gmailMessageList.add(vo);
+            }
+        }
+        for (MailReceptionVO mail : gmailMessageList) {
+        	try {
+                mailMapper.insertMailList(mail);
+            } catch (DuplicateKeyException e) {
+                log.info("중복된 mailId로 인해 삽입 생략됨: {}", mail.getMailId());
+                // 무시하고 계속 진행
+            }
+        }
+    }
+
+    @Override
+    public List<MailReceptionVO> getSentMailList(String userId) throws Exception {
+        Gmail service = mailConfig.getGmailService(userId);
+        ListMessagesResponse response = service.users().messages()
+            .list("me")
+            .setLabelIds(Collections.singletonList("SENT"))
+            .setMaxResults(10L)
+            .execute();
+
+        List<Message> messages = response.getMessages();
+        List<MailReceptionVO> sentMailList = new ArrayList<>();
+
+        if (messages != null) {
+            for (Message message : messages) {
+                Message fullMessage = service.users().messages().get("me", message.getId()).execute();
+                MailReceptionVO vo = new MailReceptionVO();
+                vo.setEmpId(userId);
+                vo.setMailId(message.getId());
+
+                for (MessagePartHeader header : fullMessage.getPayload().getHeaders()) {
+                    switch (header.getName()) {
+                        case "Subject": vo.setMailSubject(header.getValue()); break;
+                        case "To": vo.setToEmail(header.getValue()); break;
+//                        case "Date": vo.setMailDate(header.getValue()); break;
+                    }
+                }
+                sentMailList.add(vo);
+            }
+        }
+        return sentMailList;
+    }
+    
+    /**
+     *	메일 상세보기 가져오깅 체킁!
+     *	mailId, empId 필요 (구분자)
+     *	실패시에 알림창 보여줍니당!
+     */
+    @Override
+    public String getMailContent(String userId, String mailId) throws Exception {
+        Gmail service = mailConfig.getGmailService(userId);
+        Message message = service.users().messages().get("me", mailId).setFormat("full").execute();
+        return getMimeContent(message.getPayload());
+    }
+
+    @Override
+    public String getSentMailContent(String userId, String mailId) throws Exception {
+        Gmail service = mailConfig.getGmailService(userId);
+        Message message = service.users().messages().get("me", mailId).setFormat("full").execute();
+        return extractSentMailContent(message.getPayload());
+    }
+
+    private String extractSentMailContent(MessagePart part) throws IOException {
+        String mimeType = part.getMimeType();
+        StringBuilder content = new StringBuilder();
+
+        if ("text/plain".equalsIgnoreCase(mimeType) || "text/html".equalsIgnoreCase(mimeType)) {
+            String encodedData = part.getBody().getData();
+            if (encodedData != null) {
+                encodedData = encodedData.replaceAll("\\s+", "");
+                byte[] decodedBytes = Base64.getUrlDecoder().decode(encodedData);
+                content.append(new String(decodedBytes, StandardCharsets.UTF_8));
+            }
+        } else if (part.getParts() != null) {
+            for (MessagePart subPart : part.getParts()) {
+                content.append(extractSentMailContent(subPart));
+            }
+        }
+        return content.toString();
+    }
+
+    private String getMimeContent(MessagePart part) {
+        String mimeType = part.getMimeType();
+
+        if ("text/html".equalsIgnoreCase(mimeType)) {
+            String encodedData = part.getBody().getData();
+            if (encodedData != null) {
+                encodedData = encodedData.replaceAll("\\s+", "");
+                byte[] decodedBytes = Base64.getUrlDecoder().decode(encodedData);
+                return new String(decodedBytes, StandardCharsets.UTF_8);
+            }
+        }
+
+        if (part.getParts() != null) {
+            for (MessagePart subPart : part.getParts()) {
+                String result = getMimeContent(subPart);
+                if (result != null && !result.isEmpty()) {
+                    return result;
+                }
+            }
+        }
+
+        return "";
+    }
+
+    @Override
+    public List<String> getFavoriteMailIds(String empId) {
+        return mailMapper.selectFavoriteMailIds(empId);
+    }
+
+    @Override
+    public void addFavorite(String empId, String mailId) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("empId", empId);
+        map.put("mailId", mailId);
+        map.put("mailFav", 1);
+        mailMapper.insertFavorite(map);
+    }
+
+    @Override
+    public void removeFavorite(String empId, String mailId) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("empId", empId);
+        map.put("mailId", mailId);
+        map.put("mailFav", 0);
+        mailMapper.deleteFavorite(map);
+    }
+
+    @Override
+    public List<MailReceptionVO> getFavoriteMailList(String empId) {
+        return mailMapper.selectFavoriteMailList(empId);
+    }
+
+    @Override
+    public MailUserAuthVO getToken(String userId) {
+        return mailMapper.selectTokenByUserId(userId);
+    }
+
+    @Override
+    public void saveOrUpdateToken(MailUserAuthVO token) {
+        MailUserAuthVO existing = mailMapper.selectTokenByUserId(token.getEmpId());
+        if (existing == null) {
+            mailMapper.insertToken(token);
+        } else {
+            mailMapper.updateToken(token);
+        }
+    }
+    
+    @Override
+    public void tryAutoAuth(String empId) {
+        MailUserAuthVO token = mailMapper.selectTokenByUserId(empId);
+
+        if (token == null) {
+            // Gmail 인증 필요: 예외로 핸들링
+            throw new NeedOAuthRedirectException("최초 사용자, Gmail 인증이 필요합니다.");
+        }
+
+        if (token.getTokenExpiry().before(new Date())) {
+            // 토큰 만료 시 재갱신 (리프레시 토큰 사용)
+            this.saveOrUpdateToken(token);
+        }
+    }
+
+	@Override
+	public List<MailReceptionVO> selectMailList(String empId) {
+		return mailMapper.selectMailList(empId);
+	}
+	
+	@Override
+	public void sendMailWithLog(MailSentLogVO vo) throws Exception {
+	    Gmail service = mailConfig.getGmailService(vo.getEmpId());
+
+	    // Gmail 전송을 위한 메일 객체 생성
+	    MimeMessage email = createEmail(
+	        vo.getToEmail(),
+	        vo.getEmpId(),
+	        vo.getSentNmLog(),      // 제목
+	        vo.getSentCotentLog()   // 본문
+	    );
+
+	    Message message = createMessageWithEmail(email);
+	    Message result = service.users().messages().send("me", message).execute();
+
+	    // Gmail 메일 ID 저장
+	    vo.setMailId(result.getId());
+
+	    // 현재 시간 저장 (문자열보단 LocalDateTime 추천)
+	    vo.setSentAt(Timestamp.valueOf(LocalDateTime.now()));
+
+	    // 로그 DB 저장
+	    mailMapper.insertMailLog(vo);
+	}
+	
+	private MimeMessage createEmail(String to, String from, String subject, String bodyText) throws MessagingException {
+	    Properties props = new Properties();
+	    Session session = Session.getDefaultInstance(props, null);
+
+	    MimeMessage email = new MimeMessage(session);
+	    email.setFrom(new InternetAddress(from));
+	    email.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(to));
+	    email.setSubject(subject, "UTF-8");
+	    email.setText(bodyText, "UTF-8");
+	    return email;
+	}
+	
+	private Message createMessageWithEmail(MimeMessage emailContent) throws MessagingException, IOException {
+	    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+	    emailContent.writeTo(buffer);
+	    byte[] rawMessageBytes = buffer.toByteArray();
+	    String encodedEmail = Base64.getUrlEncoder().encodeToString(rawMessageBytes);
+
+	    Message message = new Message();
+	    message.setRaw(encodedEmail);
+	    return message;
+	}
+}

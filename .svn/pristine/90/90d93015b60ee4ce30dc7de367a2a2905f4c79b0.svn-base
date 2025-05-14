@@ -1,0 +1,139 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 27.     	KMJ            최초 생성
+ *
+ * </pre>
+ */
+
+function showNav(event) {
+    const navbar = document.getElementById('myNavbar');
+    if (navbar.style.display === 'none' || navbar.style.display === '') {
+        navbar.style.display = 'block';
+        navbar.style.left = event.currentTarget.offsetLeft + event.currentTarget.offsetWidth + 'px';
+        navbar.style.top = event.currentTarget.offsetTop + 'px';
+    } else {
+        navbar.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const navTriggers = document.querySelectorAll('.nav-trigger');
+    navTriggers.forEach(trigger => {
+        trigger.addEventListener('click', showNav);
+    });
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    let uploadBtn = document.querySelector("#pills-home-tab-icon");
+    let fileInput = document.querySelector("#fileInput");
+
+    // 요소가 존재하는지 확인 후 이벤트 바인딩
+    if (uploadBtn) {
+        uploadBtn.addEventListener("click", function () {
+            if (fileInput) {
+                fileInput.click();
+            } else {
+                console.error("파일 입력 요소(#fileInput)를 찾을 수 없습니다.");
+            }
+        });
+    } else {
+        console.error("파일 업로드 버튼(#pills-home-tab-icon)을 찾을 수 없습니다.");
+    }
+
+    // 파일 선택 후 업로드 실행
+    if (fileInput) {
+        fileInput.addEventListener("change", function () {
+            uploadFile();
+        });
+    }
+});
+
+function uploadFile() {
+    let fileInput = document.querySelector("#fileInput");
+    if (!fileInput || fileInput.files.length === 0) {
+        alert("파일을 선택해주세요.");
+        return;
+    }
+
+    let file = fileInput.files[0];
+    let formData = new FormData();
+    formData.append("file", file);
+    formData.append("empId", empId); // 로그인된 empId를 동적으로 설정해야 함
+	
+//	const contextPath = "/" + window.location.pathname.split("/")[1]; 
+
+    fetch(contextPath + "/" + companyNo + "/webhard/new", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert("업로드 성공");
+        location.reload(); // 업로드 후 파일 목록 갱신
+    })
+    .catch(error => {
+        console.error("업로드 실패:", error);
+        alert("파일 업로드에 실패했습니다.");
+    });
+}
+
+
+document.body.addEventListener("click", function(event) { //삭제버튼클릭
+    let targetId = event.target.id;
+	if (targetId === "pills-profile-tab-icon") {
+	    deleteFile();
+	}	
+
+function deleteFile(){
+	let selectedRadio = document.querySelector('input[name="pills-profile-tab-icon"]:checked');
+	
+	if (!selectedRadio) {
+        Swal.fire({
+            icon: "warning",
+            title: "체크 필요!",
+            text: "삭제할 파일을 선택하세요!",
+            confirmButtonText: "확인",
+            confirmButtonColor: "#ff9800",
+        });
+        return;
+    }
+	
+	let fileNo = selectedRadio.value;
+	
+	Swal.fire({
+	    title: "삭제 확인",
+	    text: "정말로 삭제하시겠습니까?",
+	    icon: "warning",
+	    showCancelButton: true,
+	    confirmButtonColor: "#d33",
+	    cancelButtonColor: "#3085d6",
+	    confirmButtonText: "삭제",
+	    cancelButtonText: "취소"
+	}).then((result) => {
+	    if (result.isConfirmed) {
+	        $.ajax({
+	            url: `${contextPath}/${companyNo}/schedule/scheduleList/${fileNo}`,
+	            type: "DELETE",
+	            success: function(resp) {
+	                if (resp.cnt == 1) {
+	                    Swal.fire("삭제 완료!", "일정이 삭제되었습니다.", "success").then(() => {
+	                        location.reload(); // 페이지 새로고침
+	                    });
+	                } else {
+	                    Swal.fire("삭제 실패!", "다시 시도해 주세요.", "error");
+	                }
+	            },
+	            error: function(xhr, status, error) {
+	                console.error("AJAX 오류:", status, error);
+	                Swal.fire("오류 발생!", "일정 삭제 중 문제가 발생했습니다.", "error");
+	            }
+	        });
+	    }
+	});	
+}
+});

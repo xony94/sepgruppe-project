@@ -1,0 +1,106 @@
+/** 
+ * <pre>
+ * << 개정이력(Modification Information) >>
+ *   
+ *   수정일      			수정자           수정내용
+ *  -----------   	-------------    ---------------------------
+ * 2025. 3. 26.     	JSW            최초 생성
+ *
+ * </pre>
+ */
+$(document).ready(function () {
+        $("#multi-filter-select").DataTable({
+          pageLength: 5,
+          initComplete: function () {
+            this.api()
+              .columns()
+              .every(function () {
+                var column = this;
+                var select = $(
+                  '<select class="form-select"><option value=""></option></select>'
+                )
+                  .appendTo($(column.footer()).empty())
+                  .on("change", function () {
+                    var val = $.fn.dataTable.util.escapeRegex($(this).val());
+
+                    column
+                      .search(val ? "^" + val + "$" : "", true, false)
+                      .draw();
+                  });
+
+                column
+                  .data()
+                  .unique()
+                  .sort()
+                  .each(function (d, j) {
+                    select.append(
+                      '<option value="' + d + '">' + d + "</option>"
+                    );
+                  });
+              });
+          },
+        });
+		
+		function loadDepartments() {
+			const $wrap = $('#dept-select-wrap');
+	
+			// 버튼 숨기기
+			$('#loadDeptBtn').hide();
+	
+			// select 요소 생성
+			const $deptSelect = $('<select id="deptCd" name="deptCd" class="form-select mt-2"></select>');
+			$deptSelect.append('<option value="">부서 선택</option>');
+			$wrap.append($deptSelect);
+
+			$.ajax({
+				url: contextPath + "/" + companyNo + "/employee/departments",
+				type: 'GET',
+				success: function (departments) {
+					departments.forEach(dept => {
+						$deptSelect.append(`<option value="${dept.deptCd}">${dept.deptName}</option>`);
+					});
+				},
+				error: function () {
+					Swal.fire({
+					   icon: 'error',
+					   title: '부서 불러오기 실패',
+					   text: '서버로부터 부서 정보를 가져오지 못했습니다.'
+				 	});
+				}
+			});
+		}
+		
+		// 버튼 클릭 시 부서 select 보여주기
+		$('#dept-select-wrap').on('click', '#loadDeptBtn', loadDepartments);
+
+		
+		$('#employeeForm').on('submit', function (e) {
+		  e.preventDefault();
+		  const formData = new FormData(this);
+		  $.ajax({
+		    url: contextPath + "/" + companyNo + "/employee/new",
+		    type: 'POST',
+		    data: formData,
+		    processData: false,
+		    contentType: false,
+		    success: function () {
+				Swal.fire({
+				    icon: 'success',
+				    title: '사원 등록 성공!',
+				    showConfirmButton: false,
+				    timer: 1500
+			  	});
+				  $('#employeeModal').modal('hide');
+				  setTimeout(() => location.reload(), 1500);
+				},
+		    error: function () {
+				Swal.fire({
+				    icon: 'error',
+				    title: '사원 등록 실패',
+				    text: '입력 정보를 다시 확인해주세요.'
+			  	});
+		    }
+		  });
+		});
+		
+      });

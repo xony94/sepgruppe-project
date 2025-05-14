@@ -1,0 +1,11 @@
+package kr.or.ddit.works.organization.service;
+
+import java.util.List;
+
+import kr.or.ddit.works.organization.vo.DepartmentVO;
+
+public interface OrganizationService {
+	 List<DepartmentVO> getAllDepartments(String companyNo);
+	 DepartmentVO getDepartment(String deptCd, String companyNo);
+	 public int addDepartment(DepartmentVO department);
+}
